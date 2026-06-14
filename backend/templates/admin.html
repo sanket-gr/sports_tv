@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sports TV – Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #161b25;
+    --surface2:  #1e2535;
+    --border:    #2a3244;
+    --accent:    #3b82f6;
+    --accent2:   #6366f1;
+    --green:     #22c55e;
+    --red:       #ef4444;
+    --orange:    #f97316;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --radius:    12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-size: 20px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .sidebar-logo p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .sidebar-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 24px; color: var(--muted);
+    text-decoration: none; font-size: 14px; font-weight: 500;
+    border-radius: 0; transition: all 0.15s;
+  }
+  .sidebar-nav a:hover, .sidebar-nav a.active {
+    color: var(--text); background: var(--surface2);
+  }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 32px; overflow: auto; }
+  .page-header { margin-bottom: 32px; }
+  .page-header h2 { font-size: 26px; font-weight: 700; }
+  .page-header p  { color: var(--muted); margin-top: 6px; font-size: 14px; }
+
+  /* ── Cards / Panels ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .panel-title {
+    font-size: 16px; font-weight: 600; margin-bottom: 18px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Forms ── */
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
+  .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .form-group input, .form-group select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px;
+    padding: 10px 14px; font-size: 14px; font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .form-group input.wide { min-width: 320px; }
+  .btn {
+    padding: 10px 20px; border-radius: 8px; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-primary  { background: var(--accent);  color: #fff; }
+  .btn-primary:hover  { background: #2563eb; }
+  .btn-success  { background: var(--green);   color: #fff; }
+  .btn-danger   { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 6px 14px; font-size: 12px; }
+  .btn-danger:hover   { background: var(--red); color: #fff; }
+  .btn-warning  { background: transparent; color: var(--orange); border: 1px solid var(--orange); padding: 6px 14px; font-size: 12px; }
+  .btn-warning:hover  { background: var(--orange); color: #fff; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 10px 14px;
+    color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 12px 14px; vertical-align: middle; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-live    { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-extract { background: rgba(249,115,22,.15); color: var(--orange); }
+  .badge-error   { background: rgba(239,68,68,.15);  color: var(--red); }
+  .url-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; font-family: monospace; }
+  .hls-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-family: monospace; color: #67e8f9; }
+  .hls-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 280px;
+  }
+  .btn-copy {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .btn-copy:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.1);
+  }
+  .btn-copy:active {
+    transform: scale(0.92);
+  }
+
+  /* ── Toast Notification ── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 9999;
+  }
+  .toast-item {
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1), fadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) 2.2s forwards;
+    pointer-events: none;
+  }
+  @keyframes slideIn {
+    from {
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+    }
+  }
+  .actions { display: flex; gap: 8px; }
+
+  /* ── Stats row ── */
+  .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 24px;
+    display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px;
+  }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .label { font-size: 12px; color: var(--muted); }
+
+  /* ── Notification ── */
+  .notice {
+    background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3);
+    color: #93c5fd; border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; margin-bottom: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📺 Sports TV</h1>
+      <p>Admin Dashboard</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/admin" class="active">🏠 &nbsp;Dashboard</a>
+      <a href="/api/streams" target="_blank">📡 &nbsp;API – Streams</a>
+      <a href="/api/categories" target="_blank">🗂️ &nbsp;API – Categories</a>
+      <a href="/docs" target="_blank">📖 &nbsp;API Docs</a>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="page-header">
+      <h2>Sports TV Admin</h2>
+      <p>Manage sport categories and live stream links for the TV app.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="value" style="color: var(--accent);">{{ streams | length }}</div>
+        <div class="label">Total Streams</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color: var(--green);">
+          {{ streams | selectattr('hls_url') | list | length }}
+        </div>
+        <div class="label">With HLS Link</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" style="color: var(--accent2);">{{ categories | length }}</div>
+        <div class="label">Categories</div>
+      </div>
+    </div>
+
+    <div class="notice">
+      💡 Paste a <strong>jokertvguide.sx</strong> (or partner.nonamejose.sx) link below. The server will
+      automatically extract the direct HLS stream URL in the background — the TV app will pick it up instantly.
+    </div>
+
+    <!-- Add Stream Form -->
+    <div class="panel">
+      <div class="panel-title">➕ Add New Stream</div>
+      <form method="post" action="/admin/streams">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category_id" required>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="flex:3;">
+            <label>Stream Page URL (jokertvguide.sx or partner.nonamejose.sx link)</label>
+            <input type="url" name="source_url" class="wide"
+                   placeholder="https://partner.nonamejose.sx/421303fe/a66e6654/4a86def3"
+                   required>
+          </div>
+          <div class="form-group" style="flex:none;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary">🚀 Extract &amp; Add</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Active Streams Table -->
+    <div class="panel">
+      <div class="panel-title">📡 Active Streams</div>
+      {% if streams %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Category</th>
+              <th>Match</th>
+              <th>Source URL</th>
+              <th>HLS Link</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in streams %}
+            <tr>
+              <td style="color:var(--muted);">{{ s.id }}</td>
+              <td>{{ s.category.icon if s.category else '' }} {{ s.category.name if s.category else '—' }}</td>
+              <td>
+                <strong>{{ s.title }}</strong>
+                {% if s.participants %}
+                  <br><span style="font-size:11px;color:var(--muted);">{{ s.participants }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="url-cell" title="{{ s.source_url }}">{{ s.source_url }}</span>
+              </td>
+              <td>
+                {% if s.hls_url %}
+                  <div class="hls-container">
+                    <span class="hls-cell" title="{{ s.hls_url }}">{{ s.hls_url[:60] }}…</span>
+                    <button class="btn-copy" data-clipboard="{{ s.hls_url }}" title="Copy Link">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                  </div>
+                {% else %}
+                  <span style="color:var(--muted);font-size:12px;">pending…</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.title.startswith('[ERROR]') %}
+                  <span class="badge badge-error">Error</span>
+                {% elif s.title == 'Extracting...' or s.title == 'Re-extracting...' %}
+                  <span class="badge badge-extract">Extracting</span>
+                {% elif s.hls_url %}
+                  <span class="badge badge-live">Live ✓</span>
+                {% else %}
+                  <span class="badge badge-extract">Processing</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="actions">
+                  <form method="post" action="/admin/streams/{{ s.id }}/refresh">
+                    <button type="submit" class="btn btn-warning" title="Re-extract fresh HLS link">🔄</button>
+                  </form>
+                  <form method="post" action="/admin/streams/{{ s.id }}/delete"
+                        onsubmit="return confirm('Remove this stream?')">
+                    <button type="submit" class="btn btn-danger">🗑️</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p style="color:var(--muted); font-size:14px; text-align:center; padding:32px 0;">
+          No streams yet. Add one above!
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Categories Manager -->
+    <div class="panel">
+      <div class="panel-title">🗂️ Sport Categories</div>
+      <form method="post" action="/admin/categories" style="margin-bottom:20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category Name</label>
+            <input type="text" name="name" placeholder="e.g. Baseball" required>
+          </div>
+          <div class="form-group" style="max-width:100px;">
+            <label>Icon (emoji)</label>
+            <input type="text" name="icon" placeholder="⚾" maxlength="4">
+          </div>
+          <div class="form-group" style="max-width:100px;">
+            <label>Sort Order</label>
+            <input type="number" name="sort_order" value="99" min="0">
+          </div>
+          <div class="form-group" style="flex:none;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-success">Add Category</button>
+          </div>
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Icon</th><th>Name</th><th>Streams</th><th>Order</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td style="font-size:22px;">{{ cat.icon }}</td>
+              <td><strong>{{ cat.name }}</strong></td>
+              <td>{{ cat.streams | length }}</td>
+              <td style="color:var(--muted);">{{ cat.sort_order }}</td>
+              <td>
+                <form method="post" action="/admin/categories/{{ cat.id }}/delete"
+                      onsubmit="return confirm('Delete category and all its streams?')">
+                  <button type="submit" class="btn btn-danger">🗑️ Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-copy');
+    if (!btn) return;
+    
+    const textToCopy = btn.getAttribute('data-clipboard');
+    if (!textToCopy) return;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showToast('📋 Copied HLS link to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      // Fallback method
+      const textArea = document.createElement('textarea');
+      textArea.value = textToCopy;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('📋 Copied HLS link to clipboard!');
+      } catch (err) {
+        showToast('❌ Failed to copy to clipboard');
+      }
+      document.body.removeChild(textArea);
+    });
+  });
+
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast-item';
+    toast.innerHTML = message;
+    container.appendChild(toast);
+
+    // Remove toast after animation completes (2.5 seconds)
+    setTimeout(() => {
+      toast.remove();
+    }, 2500);
+  }
+</script>
+</body>
+</html>

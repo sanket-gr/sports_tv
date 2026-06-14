@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App brand color (shown in Leanback header) -->
+    <color name="brand_color">#3b82f6</color>
+    <color name="background_dark">#0d0f14</color>
+    <color name="card_background">#161b25</color>
+    <color name="live_green">#22c55e</color>
+</resources>

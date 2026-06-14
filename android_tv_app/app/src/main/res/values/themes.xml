@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base TV theme using Leanback -->
+    <style name="Theme.SportsTv" parent="Theme.Leanback">
+        <item name="android:windowBackground">@color/background_dark</item>
+    </style>
+
+    <!-- Playback – true full screen, no status bar -->
+    <style name="Theme.SportsTv.Playback" parent="Theme.Leanback">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

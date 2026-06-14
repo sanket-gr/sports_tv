@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Database (don't commit local DB to git)
+backend/sports_tv.db
+backend/*.db
+
+# Android build outputs
+android_tv_app/.gradle/
+android_tv_app/app/build/
+android_tv_app/local.properties
+android_tv_app/*.iml
+android_tv_app/.idea/
+
+# APK files (share separately, not via git)
+*.apk
+
+# Playwright browsers (installed on server)
+backend/playwright/
+
+# Env files
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug files
+backend/debug.html
+backend/debug_live.html
