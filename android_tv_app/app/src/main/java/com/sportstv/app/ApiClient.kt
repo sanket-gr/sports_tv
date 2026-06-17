@@ -6,6 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
+import com.sportstv.app.model.*
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
@@ -36,9 +37,6 @@ interface SportsApiService {
     suspend fun refreshStream(
         @Path("id") id: Int,
     ): StreamItem
-
-    @GET("api/categories")
-    suspend fun getCategories(): List<CategoryItem>
 }
 
 // ─── Singleton client ─────────────────────────────────────────────────────────

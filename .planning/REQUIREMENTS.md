@@ -9,9 +9,9 @@ Requirements for the initial Android Mobile App release.
 
 ### Layout & UI
 
-- [ ] **UI-01**: Mobile-friendly portrait-first layout (no Leanback TV components)
-- [ ] **UI-02**: Bottom navigation bar or tabbed view for browsing channel categories by touch
-- [ ] **UI-03**: Detail sheet/screen with channel info, favorites toggle, and playback trigger
+- [x] **UI-01**: Mobile-friendly portrait-first layout (no Leanback TV components)
+- [x] **UI-02**: Bottom navigation bar or tabbed view for browsing channel categories by touch
+- [x] **UI-03**: Detail sheet/screen with channel info, favorites toggle, and playback trigger
 
 ### Network & API
 
@@ -32,7 +32,7 @@ Requirements for the initial Android Mobile App release.
 
 ### Testing & Integration
 
-- [ ] **TEST-01**: Set up standard Android mobile Gradle project in Android Studio
+- [x] **TEST-01**: Set up standard Android mobile Gradle project in Android Studio
 - [ ] **TEST-02**: Verify building and testing on Android phone emulators
 
 ## v2 Requirements
@@ -59,9 +59,9 @@ Explicitly excluded to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UI-01 | Phase 5 | Pending |
-| UI-02 | Phase 5 | Pending |
-| UI-03 | Phase 5 | Pending |
+| UI-01 | Phase 5 | Complete |
+| UI-02 | Phase 5 | Complete |
+| UI-03 | Phase 5 | Complete |
 | NET-01 | Phase 6 | Pending |
 | NET-02 | Phase 6 | Pending |
 | PLAY-01 | Phase 7 | Pending |
@@ -70,7 +70,7 @@ Explicitly excluded to prevent scope creep.
 | FAV-01 | Phase 8 | Pending |
 | FAV-02 | Phase 8 | Pending |
 | FAV-03 | Phase 8 | Pending |
-| TEST-01 | Phase 5 | Pending |
+| TEST-01 | Phase 5 | Complete |
 | TEST-02 | Phase 8 | Pending |
 
 **Coverage:**

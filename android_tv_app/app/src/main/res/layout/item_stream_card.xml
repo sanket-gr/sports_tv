@@ -9,14 +9,33 @@
     android:focusable="true"
     android:clickable="true">
 
-    <!-- Thumbnail -->
-    <ImageView
-        android:id="@+id/iv_thumbnail"
+    <!-- Thumbnail Container -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scaleType="centerCrop"
-        android:contentDescription="Match thumbnail" />
+        android:layout_weight="1">
+        
+        <ImageView
+            android:id="@+id/iv_thumbnail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Match thumbnail" />
+            
+        <TextView
+            android:id="@+id/tv_favorite_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:text="⭐"
+            android:textSize="18sp"
+            android:visibility="gone"
+            android:shadowColor="#000000"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
+    </FrameLayout>
 
     <!-- Info bar at bottom -->
     <LinearLayout

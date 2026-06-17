@@ -15,32 +15,87 @@ Endpoints:
     GET  /api/streams/{id}   ->  single stream detail
 """
 import sys
+import asyncio
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    # Playwright requires the proactor event loop on Windows to spawn subprocesses
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+import asyncio
+import httpx
+from playwright.async_api import async_playwright
 
-from database import get_db, create_tables, Category, Stream
-import extractor
+from database import get_db, create_tables, Category, Stream, SourceConfig
+from scrapers import extract_async as run_scrapers_extract
+
+import logging
+import os
+from pythonjsonlogger import jsonlogger
+
+logger = logging.getLogger(__name__)
+
+# Setup JSON logging for production, standard formatting for local dev
+logHandler = logging.StreamHandler()
+if os.environ.get("ENVIRONMENT") == "production":
+    formatter = jsonlogger.JsonFormatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+else:
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+logHandler.setFormatter(formatter)
+
+# Remove default handlers and add our own
+logging.basicConfig(level=logging.INFO, handlers=[logHandler], force=True)
 
 # ---------------------------------------------------------------------------
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
+async def stream_refresh_worker(app: FastAPI):
+    """Background task to refresh stale streams."""
+    while True:
+        try:
+            await asyncio.sleep(60) # Wake up every 1 minute
+            db = next(get_db())
+            
+            # Find live streams that haven't been updated in 15 minutes, or never updated
+            now = datetime.utcnow()
+            stale_streams = db.query(Stream).filter(
+                Stream.is_live == True,
+                Stream.source_url != ""
+            ).all()
+            
+            for stream in stale_streams:
+                # If it's missing updated_at, or it's been > 15 minutes
+                if not stream.hls_updated_at or (now - stream.hls_updated_at).total_seconds() > 900:
+                    logger.info(f"Auto-refreshing stale stream {stream.id}: {stream.title}")
+                    browser = getattr(app.state, "browser", None)
+                    # Use asyncio.create_task to run concurrently without blocking the worker
+                    asyncio.create_task(_run_extraction(stream.id, stream.source_url, stream.fallback_url or "", browser))
+                    
+            db.close()
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Error in stream_refresh_worker: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    create_tables()
+    # In production, migrations should be applied via Alembic (e.g. `alembic upgrade head`)
+    # For local SQLite development, we can still call create_tables if we want, but letting Alembic handle it is better.
+    # We leave this commented out to enforce Alembic migrations.
+    # create_tables()
+    
     db = next(get_db())
     if db.query(Category).count() == 0:
         defaults = [
@@ -55,9 +110,48 @@ async def lifespan(app: FastAPI):
         ]
         db.add_all(defaults)
         db.commit()
+    
+    # Ensure UFC category exists
+    ufc_cat = db.query(Category).filter_by(name="UFC").first()
+    if not ufc_cat:
+        db.add(Category(name="UFC", icon="🥊", sort_order=9))
+        db.commit()
+
+    # Seed initial SourceConfigs if missing
+    if db.query(SourceConfig).count() == 0:
+        sources = [
+            SourceConfig(name="Sportsurge", domain="sportsurge.ws"),
+            SourceConfig(name="WatchMMAFull", domain="watchmmafull.com"),
+            SourceConfig(name="JokerTVGuide", domain="jokertvguide.sx"),
+            SourceConfig(name="Vidplayer", domain="vidplayer.com")
+        ]
+        db.add_all(sources)
+        db.commit()
+
     db.close()
+    
+    # Launch persistent playwright session
+    try:
+        app.state.playwright = await async_playwright().start()
+        app.state.browser = await app.state.playwright.chromium.launch(headless=True)
+    except Exception as e:
+        logger.error(f"Failed to start playwright pooling: {e}")
+        app.state.playwright = None
+        app.state.browser = None
+
+    refresh_task = asyncio.create_task(stream_refresh_worker(app))
+
     yield  # App runs here
-    # Shutdown (nothing needed)
+    
+    # Shutdown
+    refresh_task.cancel()
+    try:
+        if getattr(app.state, "browser", None):
+            await app.state.browser.close()
+        if getattr(app.state, "playwright", None):
+            await app.state.playwright.stop()
+    except Exception as e:
+        logger.warning(f"Error during playwright shutdown: {e}")
 
 
 app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
@@ -70,10 +164,11 @@ app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     categories = db.query(Category).order_by(Category.sort_order).all()
     streams    = db.query(Stream).order_by(Stream.created_at.desc()).all()
+    sources    = db.query(SourceConfig).all()
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={"categories": categories, "streams": streams},
+        context={"categories": categories, "streams": streams, "sources": sources},
     )
 
 
@@ -102,9 +197,11 @@ def delete_category(cat_id: int, db: Session = Depends(get_db)):
 
 @app.post("/admin/streams")
 def add_stream(
+    request: Request,
     background_tasks: BackgroundTasks,
     category_id:  int = Form(...),
     source_url:   str = Form(...),
+    fallback_url: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Submit a stream URL. Extraction runs in the background."""
@@ -117,6 +214,7 @@ def add_stream(
         category_id  = category_id,
         title        = "Extracting...",
         source_url   = source_url,
+        fallback_url = fallback_url,
         is_live      = True,
     )
     db.add(stream)
@@ -124,44 +222,86 @@ def add_stream(
     db.refresh(stream)
     stream_id = stream.id
 
-    # Run extraction in background to avoid blocking the request
-    background_tasks.add_task(_run_extraction, stream_id, source_url)
+    # Run extraction in background
+    browser = getattr(request.app.state, "browser", None)
+    background_tasks.add_task(_run_extraction, stream_id, source_url, fallback_url, browser)
 
     return RedirectResponse("/admin", status_code=303)
 
 
-def _run_extraction(stream_id: int, source_url: str):
-    """Background task: extract metadata + HLS link and update the DB record."""
-    db = next(get_db())
-    stream = db.query(Stream).filter_by(id=stream_id).first()
-    if not stream:
-        return
-    # Initialize progress
-    stream.progress = 0
-    db.commit()
+async def _run_extraction(stream_id: int, source_url: str, fallback_url: str, browser: Any):
+    """Background task to extract HLS url and update DB."""
+    db: Session = next(get_db())
     try:
-        # Step 1: fetch page and parse metadata
-        data = extractor.extract(source_url)
-        # Update after metadata extraction (approx 30%)
-        stream.progress = 30
+        results = await run_scrapers_extract(source_url, browser)
+        
+        # Fallback logic
+        if (not results or (isinstance(results, dict) and results.get("title", "").startswith("[ERROR]"))) and fallback_url:
+            logger.info(f"Source URL failed, trying fallback: {fallback_url}")
+            results = await run_scrapers_extract(fallback_url, browser)
+            
+        # If it's a single dict, convert to list
+        if isinstance(results, dict):
+            results = [results]
+            
+        if not results:
+            stream = db.query(Stream).filter(Stream.id == stream_id).first()
+            if stream:
+                stream.title = "[ERROR] Extraction failed"
+            db.commit()
+            return
+            
+        # Update original stream with the first result
+        stream = db.query(Stream).filter(Stream.id == stream_id).first()
+        if not stream:
+            return
+            
+        first_data = results[0]
+        stream.title = first_data.get("title", "Unknown")
+        stream.sport = first_data.get("sport", "")
+        stream.participants = first_data.get("participants", "")
+        if first_data.get("thumbnail_url"):
+            stream.thumbnail_url = first_data["thumbnail_url"]
+        
+        stream.source_url = first_data.get("source_url", source_url)
+        stream.iframe_url = first_data.get("iframe_url", "")
+        stream.hls_url = first_data.get("hls_url", "")
+        stream.cf_domain = first_data.get("cf_domain", "")
+        
+        # Determine is_live based on HLS
+        if stream.hls_url:
+            stream.is_live = True
+            stream.hls_updated_at = datetime.utcnow()
+        else:
+            stream.is_live = False
+            
         db.commit()
-        # Update fields
-        stream.title = data.get("title", "Unknown")
-        stream.sport = data.get("sport", "")
-        stream.participants = data.get("participants", "")
-        stream.iframe_url = data.get("iframe_url", "")
-        stream.hls_url = data.get("hls_url", "")
-        stream.thumbnail_url = data.get("thumbnail_url", "")
-        # Update after iframe handling (approx 60%)
-        stream.progress = 60
-        db.commit()
-        # Final step: mark completed
-        stream.progress = 100
+        
+        # Create additional streams for the remaining results (Server 2, etc.)
+        for extra_data in results[1:]:
+            new_stream = Stream(
+                category_id=stream.category_id,
+                title=extra_data.get("title", "Unknown"),
+                sport=extra_data.get("sport", ""),
+                participants=extra_data.get("participants", ""),
+                thumbnail_url=stream.thumbnail_url,
+                source_url=extra_data.get("source_url", source_url),
+                iframe_url=extra_data.get("iframe_url", ""),
+                hls_url=extra_data.get("hls_url", ""),
+                hls_updated_at=datetime.utcnow() if extra_data.get("hls_url") else None,
+                cf_domain=extra_data.get("cf_domain", ""),
+                is_live=bool(extra_data.get("hls_url")),
+                progress=100
+            )
+            db.add(new_stream)
+            
         db.commit()
     except Exception as e:
-        stream.title = f"[ERROR] {e}"
-        stream.progress = 100
-        db.commit()
+        stream = db.query(Stream).filter(Stream.id == stream_id).first()
+        if stream:
+            stream.title = f"[ERROR] {e}"
+            stream.progress = 100
+            db.commit()
     finally:
         db.close()
 
@@ -172,6 +312,20 @@ def delete_stream(stream_id: int, db: Session = Depends(get_db)):
     if stream:
         db.delete(stream)
         db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+
+@app.post("/admin/streams/refresh-all")
+def refresh_all_streams(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Re-run extraction for all streams."""
+    streams = db.query(Stream).filter(Stream.source_url != "").all()
+    for stream in streams:
+        stream.title = "Re-extracting..."
+        background_tasks.add_task(_run_extraction, stream.id, stream.source_url)
+    db.commit()
     return RedirectResponse("/admin", status_code=303)
 
 
@@ -194,6 +348,94 @@ def refresh_stream(
 # TV APP API  –  JSON endpoints consumed by the Android app
 # ===========================================================================
 
+
+import urllib.parse
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+@app.get("/api/proxy")
+async def hls_proxy(
+    request: Request,
+    url: str,
+    referer: str = "",
+):
+    """
+    HLS reverse-proxy: fetches the given CDN URL server-side (ignoring SSL errors
+    for IP-based hosts) and rewrites relative segment URLs to route through this
+    proxy endpoint. The Android app can therefore always connect to the trusted
+    backend over plain HTTP on the local network.
+    """
+    import requests as req_lib
+
+    if not referer:
+        parsed = urllib.parse.urlparse(url)
+        referer = f"{parsed.scheme}://{parsed.netloc}/"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 11; TV) AppleWebKit/537.36 Chrome/119 Safari/537.36",
+        "Referer":    referer,
+        "Origin":     referer.rstrip("/"),
+        "Accept":     "*/*",
+    }
+
+    try:
+        resp = req_lib.get(url, headers=headers, verify=False, timeout=15, stream=True)
+    except Exception as e:
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(f"Proxy error: {e}", status_code=502)
+
+    content_type = resp.headers.get("Content-Type", "application/octet-stream")
+
+    # For HLS playlist files, rewrite URLs to route through this proxy
+    if "mpegurl" in content_type.lower() or url.endswith(".m3u8") or url.endswith(".txt"):
+        body = resp.text
+        base_url = url.rsplit("/", 1)[0] + "/"
+        server_base = str(request.base_url)  # e.g. http://192.168.100.61:8000/
+
+        lines = body.splitlines()
+        rewritten = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                # It's a URI line – make it absolute then proxy it
+                if stripped.startswith("http://") or stripped.startswith("https://"):
+                    abs_url = stripped
+                else:
+                    abs_url = base_url + stripped
+                proxy_url = f"{server_base}api/proxy?url={urllib.parse.quote(abs_url, safe='')}&referer={urllib.parse.quote(referer, safe='')}"
+                rewritten.append(proxy_url)
+            else:
+                rewritten.append(line)
+
+        from fastapi.responses import Response
+        return Response(
+            content="\n".join(rewritten),
+            media_type="application/vnd.apple.mpegurl",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "no-cache",
+            },
+        )
+
+    # For binary media segments – stream through
+    from fastapi.responses import StreamingResponse
+
+    def _stream():
+        for chunk in resp.iter_content(chunk_size=65536):
+            yield chunk
+
+    return StreamingResponse(
+        _stream(),
+        media_type=content_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
+
 @app.get("/api/categories")
 def api_categories(db: Session = Depends(get_db)):
     cats = db.query(Category).order_by(Category.sort_order).all()
@@ -210,6 +452,7 @@ def api_categories(db: Session = Depends(get_db)):
 
 @app.get("/api/streams")
 def api_streams(
+    request: Request,
     category_id: Optional[int] = None,
     live_only:   bool = True,
     db: Session = Depends(get_db),
@@ -220,38 +463,64 @@ def api_streams(
     if category_id:
         q = q.filter(Stream.category_id == category_id)
     streams = q.order_by(Stream.created_at.desc()).all()
-    return [_stream_to_dict(s) for s in streams]
+    return [_stream_to_dict(s, request) for s in streams]
 
 
 @app.get("/api/streams/{stream_id}")
-def api_stream_detail(stream_id: int, db: Session = Depends(get_db)):
+def api_stream_detail(stream_id: int, request: Request, db: Session = Depends(get_db)):
     s = db.query(Stream).filter_by(id=stream_id).first()
     if not s:
         return JSONResponse(status_code=404, content={"detail": "Stream not found"})
-    return _stream_to_dict(s)
+    return _stream_to_dict(s, request)
 
 
 @app.get("/api/streams/{stream_id}/refresh")
 def api_stream_refresh(
     stream_id: int,
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Re-extract HLS URL for a stream (called by TV app when token expires).
-    Triggers background extraction and returns the current stream data immediately.
-    The TV app should poll /api/streams/{id} after a few seconds for the fresh URL."""
+    """Re-extract HLS URL for a stream (called by TV app when token expires)."""
     s = db.query(Stream).filter_by(id=stream_id).first()
     if not s:
         return JSONResponse(status_code=404, content={"detail": "Stream not found"})
-    # Only re-extract if we have a source URL
     if s.source_url:
         s.progress = 0
         db.commit()
-        background_tasks.add_task(_run_extraction, stream_id, s.source_url)
-    return _stream_to_dict(s)
+        browser = getattr(request.app.state, "browser", None)
+        background_tasks.add_task(_run_extraction, stream_id, s.source_url, s.fallback_url or "", browser)
+    return _stream_to_dict(s, request)
 
 
-def _stream_to_dict(s: Stream) -> dict:
+def _needs_proxy(hls_url: str) -> bool:
+    """Returns True if the HLS URL points to a raw IP (self-signed cert, needs proxy)."""
+    import re
+    if not hls_url:
+        return False
+    try:
+        host = urllib.parse.urlparse(hls_url).hostname or ""
+        return bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host))
+    except Exception:
+        return False
+
+
+def _stream_to_dict(s: Stream, request: Request = None) -> dict:
+    hls_url = s.hls_url or ""
+    iframe_url = s.iframe_url or ""
+
+    # Wrap IP-based HLS URLs through the local proxy to avoid SSL cert errors on TV
+    if request and hls_url and _needs_proxy(hls_url):
+        referer = urllib.parse.urlparse(iframe_url)
+        ref_str = f"{referer.scheme}://{referer.netloc}/" if referer.netloc else "https://www.google.com/"
+        proxy_url = (
+            f"{request.base_url}api/proxy"
+            f"?url={urllib.parse.quote(hls_url, safe='')}"
+            f"&referer={urllib.parse.quote(ref_str, safe='')}"
+        )
+    else:
+        proxy_url = hls_url
+
     return {
         "id":            s.id,
         "category_id":   s.category_id,
@@ -261,13 +530,48 @@ def _stream_to_dict(s: Stream) -> dict:
         "participants":  s.participants,
         "sport":         s.sport,
         "source_url":    s.source_url,
-        "iframe_url":    s.iframe_url,
-        "hls_url":       s.hls_url,
+        "iframe_url":    iframe_url,
+        "hls_url":       proxy_url,          # proxied URL for TV app
+        "hls_url_raw":   hls_url,            # raw CDN URL (for reference)
+        "cf_domain":     s.cf_domain,
         "thumbnail_url": s.thumbnail_url,
         "is_live":       s.is_live,
         "created_at":    s.created_at.isoformat() if s.created_at else "",
     }
 
+
+@app.post("/admin/sources/toggle/{source_id}")
+def toggle_source(source_id: int, request: Request, db: Session = Depends(get_db)):
+    source = db.query(SourceConfig).filter_by(id=source_id).first()
+    if source:
+        source.is_active = not source.is_active
+        db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@app.get("/api/health/sources")
+async def health_check_sources(db: Session = Depends(get_db)):
+    """Check connectivity to all sources and update SourceConfig table."""
+    sources = db.query(SourceConfig).all()
+    results = []
+    
+    async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
+        for source in sources:
+            url = f"https://{source.domain}"
+            status = "Offline"
+            try:
+                resp = await client.head(url, headers={"User-Agent": "Mozilla/5.0"})
+                if resp.status_code < 500:
+                    status = "Online"
+            except Exception as e:
+                logger.warning(f"Health check failed for {source.domain}: {e}")
+                
+            source.last_health_status = status
+            source.last_checked_at = datetime.utcnow()
+            results.append({"name": source.name, "domain": source.domain, "status": status})
+            
+    db.commit()
+    return {"sources": results}
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

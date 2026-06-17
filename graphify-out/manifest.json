@@ -1,0 +1,417 @@
+{
+  "D:\\projects\\sports_tv\\.planning\\config.json": {
+    "mtime": 1781700377.0982046,
+    "ast_hash": "e1f704cfdb059248781a7ef2ec27131d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\build.gradle": {
+    "mtime": 1781431649.8467116,
+    "ast_hash": "a5dba02c0b1e07b274165bbfa345bd30",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\gradlew": {
+    "mtime": 1781431711.3271654,
+    "ast_hash": "67314203057d87c0de17d1c7c44a9628",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\settings.gradle": {
+    "mtime": 1781431717.4048016,
+    "ast_hash": "cbacb4d59bee13290637892ebba5ae22",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\build.gradle": {
+    "mtime": 1781431854.0798936,
+    "ast_hash": "61a1501ec11eb29d50789d5cdc3b4ff2",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\ApiClient.kt": {
+    "mtime": 1781699551.9365416,
+    "ast_hash": "7e76b414e904ec639d791dc5b81d6615",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\CardPresenter.kt": {
+    "mtime": 1781551674.6813064,
+    "ast_hash": "b1c94cb0b4f954c0efdf34efe6167d68",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\MainActivity.kt": {
+    "mtime": 1781551730.9941826,
+    "ast_hash": "8c2a6fabfccd8b1abc64841265163996",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\MainFragment.kt": {
+    "mtime": 1781551686.1928973,
+    "ast_hash": "eeb7fe56081b5440575fcdb1a0146e1d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\PlaybackActivity.kt": {
+    "mtime": 1781551592.744035,
+    "ast_hash": "8bf22ed8576c39796566aadacc89f872",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\android_tv_app\\app\\src\\main\\java\\com\\sportstv\\app\\model\\Models.kt": {
+    "mtime": 1781554461.3719246,
+    "ast_hash": "ac97e2a37b12e7af425423f1c815a2c7",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\check_server.py": {
+    "mtime": 1781523395.906653,
+    "ast_hash": "fe0b48a319e26451f907e3ffc26bb255",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\database.py": {
+    "mtime": 1781550810.721464,
+    "ast_hash": "c346f1d25f548d666ce2c9735d241083",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\debug.py": {
+    "mtime": 1781425652.5016024,
+    "ast_hash": "5caaed6fed853e8cc161a0f5cbd7a9b8",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\debug_live.py": {
+    "mtime": 1781427017.463451,
+    "ast_hash": "5467963e305dc071505e01669559c555",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\debug_playwright_html.py": {
+    "mtime": 1781523325.1888645,
+    "ast_hash": "1ad8ddd99f7cd1f3bbbaa29c73cb4b88",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\main.py": {
+    "mtime": 1781685409.379013,
+    "ast_hash": "1dbb66b8be5e38d3668e876d3cdb336e",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\migrate_add_cf_domain.py": {
+    "mtime": 1781524372.2136912,
+    "ast_hash": "232efd95f09923633e5ada79db10531c",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\migrate_progress.py": {
+    "mtime": 1781430207.2761302,
+    "ast_hash": "6bae88b0ae2b3c018faabb244cfaa325",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\player_js.js": {
+    "mtime": 1781523057.2940876,
+    "ast_hash": "fb159bc19371477876bd49c0f1c44870",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\update_stream_url.py": {
+    "mtime": 1781525787.4566982,
+    "ast_hash": "8d13fe5c834ec602161a8e12de18700a",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\alembic\\env.py": {
+    "mtime": 1781552577.1749399,
+    "ast_hash": "1a1ba4247b786a96ab2779979acfa311",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\alembic\\versions\\f7fb6d28faf0_initial_schema.py": {
+    "mtime": 1781552584.515148,
+    "ast_hash": "9a6b20bfd30887dfceef41a6ebe5b8d1",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\decrypt_player.js": {
+    "mtime": 1781523269.1747248,
+    "ast_hash": "b3afa28d918cfd7ea11b5f06ce646d4f",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\deobfuscator.js": {
+    "mtime": 1781523161.5374599,
+    "ast_hash": "03ef6df72d3c5033c145977d3bc495ee",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\extract_deobfuscator.py": {
+    "mtime": 1781523155.3079221,
+    "ast_hash": "d6e7b8d5086f1386e67bf9d6425cb72d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\find_kl.py": {
+    "mtime": 1781523131.1396408,
+    "ast_hash": "df3d7c835f360e5946ac9c6965989cb4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\fix_stuck.py": {
+    "mtime": 1781425699.5511014,
+    "ast_hash": "4843e558561fb4e7df806738947b0bf7",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\bypass\\__init__.py": {
+    "mtime": 1781546088.086532,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\base.py": {
+    "mtime": 1781548933.288985,
+    "ast_hash": "8bd1fb6eb4636afc7e3d7acbc71bed7c",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\jokertvguide.py": {
+    "mtime": 1781553444.1417184,
+    "ast_hash": "cda145799f1ea3b74d878f11e7cf3851",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\sportsurge.py": {
+    "mtime": 1781548957.6877756,
+    "ast_hash": "526a9297503e99a7d3a678e7f69dbd13",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\vidplayer.py": {
+    "mtime": 1781548970.2093425,
+    "ast_hash": "bd9e3af312d9f9ab1ef1d5fbedfecb57",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\watchmmafull.py": {
+    "mtime": 1781548990.8719983,
+    "ast_hash": "7d763d5b6616838218cb3f8db7f33009",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scrapers\\__init__.py": {
+    "mtime": 1781549032.1836948,
+    "ast_hash": "29815883a141e6a946c6f0fee0d17603",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\tests\\test_api.py": {
+    "mtime": 1781552635.9234655,
+    "ast_hash": "80c0a31fb89b631218fc5a05206173fe",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\tests\\test_scrapers.py": {
+    "mtime": 1781549141.4305384,
+    "ast_hash": "80854307dc62ead3a006f2f118986212",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\tests\\__init__.py": {
+    "mtime": 1781546088.0892382,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\render.yaml": {
+    "mtime": 1781436674.0483053,
+    "ast_hash": "641b8214f91bdf55c6e0dd3908f7b383",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\API.md": {
+    "mtime": 1781524928.0,
+    "ast_hash": "cdcea6f43a80e2a80cc833036de9f85b",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\ARCHITECTURE.md": {
+    "mtime": 1781544307.839248,
+    "ast_hash": "0723b906a016b3388ed6ceff37fb01b7",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\CONCERNS.md": {
+    "mtime": 1781544346.7348423,
+    "ast_hash": "f66e0ab9f3bc9d44a068523d2b689f2b",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\CONVENTIONS.md": {
+    "mtime": 1781544327.4216735,
+    "ast_hash": "09095259b027d7c6c6ee099d7e1af33c",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\FOLDER-STRUCTURE.md": {
+    "mtime": 1781524928.0,
+    "ast_hash": "c43482032af9f9defd13aadc3bdd9253",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\GIT-WORKFLOW.md": {
+    "mtime": 1781524928.0,
+    "ast_hash": "a8c83d60135b0b82fb6bcc1633df6a08",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\INTEGRATIONS.md": {
+    "mtime": 1781544297.2994306,
+    "ast_hash": "17b09bd31055d55c19e06de465e782aa",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\PROJECT.md": {
+    "mtime": 1781524928.0,
+    "ast_hash": "fb4a6f5c8b0b35777893bc211b31c408",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\REFACTOR.md": {
+    "mtime": 1781524928.0,
+    "ast_hash": "73e5b8d32e966f0e74fcba1111e9bcb3",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\ROADMAP.md": {
+    "mtime": 1781552666.7074807,
+    "ast_hash": "5e8e7964d2e5cd6b8b24a52fd8acbe3d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\STACK.md": {
+    "mtime": 1781544288.4379094,
+    "ast_hash": "b31435d253b719d982173dc898fbf0bb",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\STRUCTURE.md": {
+    "mtime": 1781544317.6105585,
+    "ast_hash": "1ea4b992999e13dd7c998d8e1c709ee2",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\codebase\\TESTING.md": {
+    "mtime": 1781544336.8779056,
+    "ast_hash": "b33c1697896d8ebd2948dcbd79d7f57f",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\phases\\01-scraper-resilience\\01-PLAN.md": {
+    "mtime": 1781548776.99267,
+    "ast_hash": "f1d0b02b9b3ce2a620730a8159dcd094",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\phases\\02-stream-performance\\02-PLAN.md": {
+    "mtime": 1781550063.1737363,
+    "ast_hash": "21677071fc51eaaef45618ebfb536fff",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\phases\\03-android-tv-ux-polish\\03-PLAN.md": {
+    "mtime": 1781551190.7690217,
+    "ast_hash": "4db7cc981c679adc759e4fed6f019bf6",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\.planning\\phases\\04-ops-deployment\\04-PLAN.md": {
+    "mtime": 1781551989.556187,
+    "ast_hash": "b11d1acf0545d269456f4cef61044ec3",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\mma_page.html": {
+    "mtime": 1781523372.380625,
+    "ast_hash": "8c5bb0341d60128ebfb83e1abef66986",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\mma_page_headful.html": {
+    "mtime": 1781523345.230158,
+    "ast_hash": "33d4f6cbbfc68a22ebf64317d21e1b8d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\player_1.html": {
+    "mtime": 1781522764.4107099,
+    "ast_hash": "589d39b4e5eb737d46bada513b431cdf",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\player_2.html": {
+    "mtime": 1781522698.9831257,
+    "ast_hash": "881ad0bfc2f54078b1421ff45bc3222f",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\player_3.html": {
+    "mtime": 1781522704.3285851,
+    "ast_hash": "7f2c304eccf558991c2c3871a88f89aa",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\requirements.txt": {
+    "mtime": 1781552539.001221,
+    "ast_hash": "b2f9050211de84ad0535bd87be59c242",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scope_debug.txt": {
+    "mtime": 1781523029.8221211,
+    "ast_hash": "048d72839dbeefd84d7c6559f4021648",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scope_debug2.txt": {
+    "mtime": 1781523057.2940876,
+    "ast_hash": "5c95d20f35cdd3ffe4a42ec659ddd68b",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\scope_debug3.txt": {
+    "mtime": 1781523093.0607944,
+    "ast_hash": "7a80741d9e857db8b5c2c13d0f7c3fdd",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\ticker.html": {
+    "mtime": 1781543944.9839363,
+    "ast_hash": "300fa034166152e69d6c6bf9b3edbfac",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\backend\\templates\\admin.html": {
+    "mtime": 1781549129.0886822,
+    "ast_hash": "4a240b11e2382c964b6dc7d6ac59a500",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_after_retry.png": {
+    "mtime": 1781525133.1415558,
+    "ast_hash": "2998dcebe81cf1ad2c9e435754f8d277",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_app_fresh.png": {
+    "mtime": 1781540676.3088431,
+    "ast_hash": "bd8ff8c3f62cf36289e1092d630a72cf",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_app_home.png": {
+    "mtime": 1781540595.8979185,
+    "ast_hash": "627243bea4b1f78dad73880211446f5f",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_app_home2.png": {
+    "mtime": 1781540625.3745248,
+    "ast_hash": "9c697ab51445c4c23c4957ca3f1c67b7",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_final_test.png": {
+    "mtime": 1781525443.8637724,
+    "ast_hash": "1b9908d5c2356769e2ea6315ee81b2c4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_home_noticker.png": {
+    "mtime": 1781540497.28526,
+    "ast_hash": "9b9159d2ceb8a63402b73f346fd318b6",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_main.png": {
+    "mtime": 1781524802.3802044,
+    "ast_hash": "b6e20d43f5eb6201373b0895295fbb4d",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_main2.png": {
+    "mtime": 1781525205.8960743,
+    "ast_hash": "cc7b621af9a27dce1e2a727e5cfe28b6",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_mime_fix_test.png": {
+    "mtime": 1781525974.0335166,
+    "ast_hash": "1b9908d5c2356769e2ea6315ee81b2c4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_playback.png": {
+    "mtime": 1781524860.83961,
+    "ast_hash": "715a6b2c86c35772ee9144a6053effcc",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_play_final2.png": {
+    "mtime": 1781525494.5745811,
+    "ast_hash": "37892e83d609811df0e3c0482d957520",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_sports_home.png": {
+    "mtime": 1781540529.944544,
+    "ast_hash": "5b3a6863a339466c591d9738f161b3e4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_stream_attempt.png": {
+    "mtime": 1781525302.0074165,
+    "ast_hash": "b91799bb3d147750991aceb168145cc6",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_ufc_play.png": {
+    "mtime": 1781525246.31333,
+    "ast_hash": "1b9908d5c2356769e2ea6315ee81b2c4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_ufc_selected.png": {
+    "mtime": 1781524830.2953577,
+    "ast_hash": "1b9908d5c2356769e2ea6315ee81b2c4",
+    "semantic_hash": ""
+  },
+  "D:\\projects\\sports_tv\\tv_vidplayer_test.png": {
+    "mtime": 1781525836.292977,
+    "ast_hash": "df7900819c9dbf3b93ba2e2396e31885",
+    "semantic_hash": ""
+  }
+}

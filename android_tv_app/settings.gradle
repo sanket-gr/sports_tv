@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SportsTv"
 include ':app'
+include ':mobile'

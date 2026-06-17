@@ -288,8 +288,13 @@
           <div class="form-group" style="flex:3;">
             <label>Stream Page URL (jokertvguide.sx or partner.nonamejose.sx link)</label>
             <input type="url" name="source_url" class="wide"
-                   placeholder="https://partner.nonamejose.sx/421303fe/a66e6654/4a86def3"
+                   placeholder="https://partner.nonamejose.sx/..."
                    required>
+          </div>
+          <div class="form-group" style="flex:3;">
+            <label>Fallback URL (Optional)</label>
+            <input type="url" name="fallback_url" class="wide"
+                   placeholder="https://watchmmafull.com/...">
           </div>
           <div class="form-group" style="flex:none;">
             <label>&nbsp;</label>
@@ -299,9 +304,58 @@
       </form>
     </div>
 
+    <!-- Sources Configuration Panel -->
+    <div class="panel">
+      <div class="panel-title">
+        ⚙️ Sources Configuration
+        <button onclick="checkHealth()" class="btn btn-secondary" style="margin-left: auto; padding: 4px 12px; font-size: 12px;">🔄 Check Health</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Domain</th>
+              <th>Health Status</th>
+              <th>Last Checked</th>
+              <th>Active</th>
+            </tr>
+          </thead>
+          <tbody id="sources-tbody">
+            {% for source in sources %}
+            <tr>
+              <td>{{ source.name }}</td>
+              <td>{{ source.domain }}</td>
+              <td>
+                <span class="badge {{ 'bg-green' if source.last_health_status == 'Online' else 'bg-red' if source.last_health_status == 'Offline' else 'bg-gray' }}">
+                  {{ source.last_health_status }}
+                </span>
+              </td>
+              <td class="timestamp" data-time="{{ source.last_checked_at.isoformat() if source.last_checked_at else '' }}">
+                {{ source.last_checked_at.strftime('%Y-%m-%d %H:%M:%S') if source.last_checked_at else 'Never' }}
+              </td>
+              <td>
+                <form method="post" action="/admin/sources/toggle/{{ source.id }}" style="margin:0;">
+                  <button type="submit" class="btn {{ 'btn-danger' if source.is_active else 'btn-primary' }}" style="padding: 4px 10px; font-size: 12px;">
+                    {{ 'Disable' if source.is_active else 'Enable' }}
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Active Streams Table -->
     <div class="panel">
-      <div class="panel-title">📡 Active Streams</div>
+      <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+        <div class="panel-title" style="margin-bottom:0;">🟢 Active Streams</div>
+        <form method="post" action="/admin/streams/refresh-all">
+            <button type="submit" class="btn btn-primary" style="font-size: 13px;">🔄 Refresh All</button>
+        </form>
+      </div>
       {% if streams %}
       <div class="table-wrap">
         <table>
@@ -318,10 +372,10 @@
           </thead>
           <tbody>
             {% for s in streams %}
-            <tr>
+            <tr data-stream-id="{{ s.id }}">
               <td style="color:var(--muted);">{{ s.id }}</td>
               <td>{{ s.category.icon if s.category else '' }} {{ s.category.name if s.category else '—' }}</td>
-              <td>
+              <td class="title-cell">
                 <strong>{{ s.title }}</strong>
                 {% if s.participants %}
                   <br><span style="font-size:11px;color:var(--muted);">{{ s.participants }}</span>
@@ -330,7 +384,7 @@
               <td>
                 <span class="url-cell" title="{{ s.source_url }}">{{ s.source_url }}</span>
               </td>
-              <td>
+              <td class="hls-cell-container">
                 {% if s.hls_url %}
                   <div class="hls-container">
                     <span class="hls-cell" title="{{ s.hls_url }}">{{ s.hls_url[:60] }}…</span>
@@ -342,7 +396,7 @@
                   <span style="color:var(--muted);font-size:12px;">pending…</span>
                 {% endif %}
               </td>
-              <td>
+              <td class="status-cell">
                 {% if s.title.startswith('[ERROR]') %}
                   <span class="badge badge-error">Error</span>
                 {% elif s.title == 'Extracting...' or s.title == 'Re-extracting...' %}
@@ -472,6 +526,108 @@
       toast.remove();
     }, 2500);
   }
+
+  // Dynamic status polling for pending/extracting streams
+  function pollExtractingStreams() {
+    const rows = document.querySelectorAll('tr[data-stream-id]');
+    let hasExtracting = false;
+    
+    rows.forEach(row => {
+      const statusText = row.querySelector('.status-cell').textContent.trim();
+      if (statusText === 'Extracting' || statusText === 'Processing' || statusText === 'pending…') {
+        hasExtracting = true;
+      }
+    });
+
+    if (!hasExtracting) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch('/api/streams?live_only=false');
+        if (!response.ok) return;
+        const streams = await response.json();
+        
+        let stillExtracting = false;
+        let requiresReload = false;
+        
+        streams.forEach(s => {
+          const row = document.querySelector(`tr[data-stream-id="${s.id}"]`);
+          if (!row) {
+            // New stream added dynamically in background (e.g. Server 2)
+            // Trigger a page reload to render the new row in the table
+            requiresReload = true;
+            return;
+          }
+
+          const titleCell = row.querySelector('.title-cell');
+          const hlsCell = row.querySelector('.hls-cell-container');
+          const statusCell = row.querySelector('.status-cell');
+
+          // Update title
+          let titleHtml = `<strong>${s.title}</strong>`;
+          if (s.participants) {
+            titleHtml += `<br><span style="font-size:11px;color:var(--muted);">${s.participants}</span>`;
+          }
+          titleCell.innerHTML = titleHtml;
+
+          // Update HLS URL cell
+          if (s.hls_url) {
+            hlsCell.innerHTML = `
+              <div class="hls-container">
+                <span class="hls-cell" title="${s.hls_url}">${s.hls_url.substring(0, 60)}…</span>
+                <button class="btn-copy" data-clipboard="${s.hls_url}" title="Copy Link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              </div>
+            `;
+          } else {
+            hlsCell.innerHTML = `<span style="color:var(--muted);font-size:12px;">pending…</span>`;
+          }
+
+          // Update status
+          let statusHtml = '';
+          if (s.title.startsWith('[ERROR]')) {
+            statusHtml = '<span class="badge badge-error">Error</span>';
+          } else if (s.title === 'Extracting...' || s.title === 'Re-extracting...') {
+            statusHtml = '<span class="badge badge-extract">Extracting</span>';
+            stillExtracting = true;
+          } else if (s.hls_url) {
+            statusHtml = '<span class="badge badge-live">Live ✓</span>';
+          } else {
+            statusHtml = '<span class="badge badge-extract">Processing</span>';
+            stillExtracting = true;
+          }
+          statusCell.innerHTML = statusHtml;
+        });
+
+        if (requiresReload) {
+          clearInterval(intervalId);
+          window.location.reload();
+        } else if (!stillExtracting) {
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error('Error polling streams:', err);
+      }
+    }, 3000);
+  }
+
+  document.addEventListener('DOMContentLoaded', pollExtractingStreams);
+</script>
+<script>
+  async function checkHealth() {
+    try {
+      const resp = await fetch('/api/health/sources');
+      const data = await resp.json();
+      if (data && data.sources) {
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("Health check failed");
+    }
+  }
+
+  setInterval(formatTimestamps, 30000);
 </script>
 </body>
 </html>

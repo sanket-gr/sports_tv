@@ -44,6 +44,17 @@ class Category(Base):
     streams     = relationship("Stream", back_populates="category", cascade="all, delete")
 
 
+class SourceConfig(Base):
+    __tablename__ = "source_configs"
+
+    id                 = Column(Integer, primary_key=True, index=True)
+    name               = Column(String(100), unique=True, nullable=False)
+    domain             = Column(String(255), nullable=False)
+    is_active          = Column(Boolean, default=True)
+    last_health_status = Column(String(50), default="Unknown")  # "Online", "Offline"
+    last_checked_at    = Column(DateTime, nullable=True)
+
+
 class Stream(Base):
     __tablename__ = "streams"
 
@@ -53,8 +64,11 @@ class Stream(Base):
     participants    = Column(String(255), default="")           # "Team A vs Team B"
     sport           = Column(String(100), default="")
     source_url      = Column(Text, nullable=False)             # source page URL
+    fallback_url    = Column(Text, nullable=True)              # fallback source page URL
     iframe_url      = Column(Text, default="")                 # embed iframe URL
     hls_url         = Column(Text, default="")                 # direct .m3u8 link
+    hls_updated_at  = Column(DateTime, nullable=True)          # last successful hls extract
+    cf_domain       = Column(Text, default="")                 # CDN domain for segment referer (e.g. silverpathgardens.space)
     thumbnail_url   = Column(Text, default="")                 # OG image if available
     is_live         = Column(Boolean, default=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
