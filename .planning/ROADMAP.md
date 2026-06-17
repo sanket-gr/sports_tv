@@ -79,7 +79,7 @@ Plans:
 **Goal:** Wire Retrofit client calls to fetch live categories and streams from the FastAPI backend.
 **Requirements:** NET-01, NET-02
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 0/1 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 6 to break down)
