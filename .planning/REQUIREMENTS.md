@@ -15,8 +15,8 @@ Requirements for the initial Android Mobile App release.
 
 ### Network & API
 
-- [ ] **NET-01**: Retrieve categories list from backend via Retrofit client (reusing `ApiClient`)
-- [ ] **NET-02**: Retrieve stream URLs and headers (Referer/User-Agent) from backend
+- [x] **NET-01**: Retrieve categories list from backend via Retrofit client (reusing `ApiClient`)
+- [x] **NET-02**: Retrieve stream URLs and headers (Referer/User-Agent) from backend
 
 ### Playback
 
@@ -62,8 +62,8 @@ Explicitly excluded to prevent scope creep.
 | UI-01 | Phase 5 | Complete |
 | UI-02 | Phase 5 | Complete |
 | UI-03 | Phase 5 | Complete |
-| NET-01 | Phase 6 | Pending |
-| NET-02 | Phase 6 | Pending |
+| NET-01 | Phase 6 | Complete |
+| NET-02 | Phase 6 | Complete |
 | PLAY-01 | Phase 7 | Pending |
 | PLAY-02 | Phase 7 | Pending |
 | PLAY-03 | Phase 7 | Pending |

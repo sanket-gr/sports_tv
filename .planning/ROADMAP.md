@@ -79,10 +79,10 @@ Plans:
 **Goal:** Wire Retrofit client calls to fetch live categories and streams from the FastAPI backend.
 **Requirements:** NET-01, NET-02
 **Depends on:** Phase 5
-**Plans:** 0/1 plans executed
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 6 to break down)
+- [x] TBD (run /gsd-plan-phase 6 to break down) (completed 2026-06-17)
 
 ### Phase 7: Mobile ExoPlayer Playback Integration
 **Goal:** Implement Media3 ExoPlayer for HLS stream playback with overlay touch controls.
