@@ -29,6 +29,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Playback Activity with dynamic orientation handling -->
+        <activity
+            android:name=".PlaybackActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
+
     </application>
 
 </manifest>

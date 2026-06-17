@@ -20,9 +20,9 @@ Requirements for the initial Android Mobile App release.
 
 ### Playback
 
-- [ ] **PLAY-01**: Integrate Media3 ExoPlayer for HLS stream playback
-- [ ] **PLAY-02**: Touch controls overlay (Play/Pause, volume, screen ratio toggle)
-- [ ] **PLAY-03**: Handle player backgrounding, rotation, and lifecycle
+- [x] **PLAY-01**: Integrate Media3 ExoPlayer for HLS stream playback
+- [x] **PLAY-02**: Touch controls overlay (Play/Pause, volume, screen ratio toggle)
+- [x] **PLAY-03**: Handle player backgrounding, rotation, and lifecycle
 
 ### Favorites
 
@@ -64,9 +64,9 @@ Explicitly excluded to prevent scope creep.
 | UI-03 | Phase 5 | Complete |
 | NET-01 | Phase 6 | Complete |
 | NET-02 | Phase 6 | Complete |
-| PLAY-01 | Phase 7 | Pending |
-| PLAY-02 | Phase 7 | Pending |
-| PLAY-03 | Phase 7 | Pending |
+| PLAY-01 | Phase 7 | Complete |
+| PLAY-02 | Phase 7 | Complete |
+| PLAY-03 | Phase 7 | Complete |
 | FAV-01 | Phase 8 | Pending |
 | FAV-02 | Phase 8 | Pending |
 | FAV-03 | Phase 8 | Pending |
