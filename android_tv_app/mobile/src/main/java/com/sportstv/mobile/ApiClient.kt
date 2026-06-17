@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit
 // ─── Backend URL configuration ───────────────────────────────────────────────
 // IMPORTANT: Change this to your backend's IP address.
 // LOCAL TESTING: "http://192.168.100.104:8000/" (Your laptop's IP)
-// PRODUCTION AWS: "http://<YOUR_AWS_PUBLIC_IP>/" (No port needed if AWS maps port 80 to 8000)
-const val BASE_URL = "http://192.168.100.104:8000/" // <-- Replace with your AWS IP when ready!
+// PRODUCTION AWS: "http://13.126.62.185/" 
+const val BASE_URL = "http://13.126.62.185/"
 
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 interface SportsApiService {
