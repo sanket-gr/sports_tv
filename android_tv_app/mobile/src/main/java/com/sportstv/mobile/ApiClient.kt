@@ -7,14 +7,16 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import com.sportstv.mobile.model.*
+import retrofit2.http.POST
+import retrofit2.http.Body
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
 // ─── Backend URL configuration ───────────────────────────────────────────────
-// IMPORTANT: Change this to your PC's local IP when testing on a real TV/mobile device.
-// Use "http://10.0.2.2:8000/" ONLY for Android Studio emulator.
-// Use "http://192.168.100.58:8000/" for a real device on the same WiFi network.
-const val BASE_URL = "http://192.168.100.58:8000/"
+// IMPORTANT: Change this to your backend's IP address.
+// LOCAL TESTING: "http://192.168.100.104:8000/" (Your laptop's IP)
+// PRODUCTION AWS: "http://<YOUR_AWS_PUBLIC_IP>/" (No port needed if AWS maps port 80 to 8000)
+const val BASE_URL = "http://192.168.100.104:8000/" // <-- Replace with your AWS IP when ready!
 
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 interface SportsApiService {
@@ -34,6 +36,12 @@ interface SportsApiService {
     suspend fun refreshStream(
         @Path("id") id: Int,
     ): StreamItem
+
+    /** Record watch time analytics */
+    @POST("api/analytics/watch_time")
+    suspend fun recordWatchTime(
+        @Body request: WatchTimeRequest
+    ): WatchTimeResponse
 }
 
 // ─── Singleton client ─────────────────────────────────────────────────────────

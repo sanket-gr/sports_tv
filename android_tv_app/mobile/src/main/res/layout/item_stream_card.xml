@@ -3,12 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="12dp"
-    android:layout_marginEnd="12dp"
-    android:layout_marginTop="6dp"
-    android:layout_marginBottom="6dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="3dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@android:color/transparent"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground">
@@ -16,33 +17,42 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
         android:padding="12dp">
 
         <!-- Thumbnail on the left -->
-        <ImageView
-            android:id="@+id/iv_thumbnail"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_thumbnail"
             android:layout_width="100dp"
             android:layout_height="70dp"
-            android:scaleType="centerCrop"
-            android:background="#1E293B"
-            android:contentDescription="Stream Thumbnail"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <ImageView
+                android:id="@+id/iv_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="#1E293B"
+                android:contentDescription="Stream Thumbnail" />
+        </androidx.cardview.widget.CardView>
 
         <!-- Title, Category and Status info on the right -->
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:textColor="#0F172A"
-            android:textSize="15sp"
+            android:layout_marginStart="16dp"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:maxLines="2"
             android:ellipsize="end"
             android:text="Real Madrid vs Barcelona"
-            app:layout_constraintStart_toEndOf="@id/iv_thumbnail"
+            app:layout_constraintStart_toEndOf="@id/cv_thumbnail"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -50,12 +60,12 @@
             android:id="@+id/tv_category"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
-            android:textColor="#64748B"
-            android:textSize="12sp"
+            android:textColor="@color/glass_text_secondary"
+            android:textSize="13sp"
             android:text="Football"
-            app:layout_constraintStart_toEndOf="@id/iv_thumbnail"
+            app:layout_constraintStart_toEndOf="@id/cv_thumbnail"
             app:layout_constraintEnd_toStartOf="@id/tv_live_badge"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_title"
@@ -66,7 +76,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="● LIVE"
-            android:textColor="#22C55E"
+            android:textColor="@color/neon_green"
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"

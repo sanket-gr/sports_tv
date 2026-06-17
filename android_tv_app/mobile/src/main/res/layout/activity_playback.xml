@@ -17,7 +17,7 @@
         android:id="@+id/controls_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#66000000"
+        android:background="#40000000"
         android:visibility="visible">
 
         <!-- Top Header -->
@@ -28,7 +28,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:padding="16dp"
-            android:background="@android:color/transparent"
+            android:background="@color/glass_bottom_nav"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageButton
@@ -75,6 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
+            android:background="@color/glass_bottom_nav"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
@@ -96,7 +97,7 @@
                 android:maxHeight="4dp"
                 android:minHeight="4dp"
                 android:thumbTint="#FFFFFF"
-                android:progressTint="#E11D48"
+                android:progressTint="@color/neon_blue"
                 android:progressBackgroundTint="#88FFFFFF"
                 app:layout_constraintStart_toEndOf="@id/iv_volume"
                 app:layout_constraintEnd_toStartOf="@id/btn_ratio"

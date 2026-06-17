@@ -29,6 +29,12 @@ import com.sportstv.mobile.model.StreamItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 
 class PlaybackActivity : AppCompatActivity() {
 
@@ -56,6 +62,8 @@ class PlaybackActivity : AppCompatActivity() {
     private var hlsUrl: String = ""
     private var iframeUrl: String = ""
     private var cfDomain: String = ""
+
+    private var watchSessionStartTime: Long = 0L
 
     private val resizeModes = listOf(
         AspectRatioFrameLayout.RESIZE_MODE_FIT,
@@ -202,9 +210,11 @@ class PlaybackActivity : AppCompatActivity() {
         releasePlayer()
         showLoading(true)
         showError(false)
+        
+        watchSessionStartTime = System.currentTimeMillis()
 
         val referer = cleanReferer(iframeUrl)
-        val baseHttpDataSourceFactory = DefaultHttpDataSource.Factory()
+        val baseHttpDataSourceFactory = OkHttpDataSource.Factory(getUnsafeOkHttpClient())
             .setUserAgent("Mozilla/5.0 (Linux; Android 11; TV) AppleWebKit/537.36 Chrome/119 Safari/537.36")
             .setDefaultRequestProperties(
                 mapOf(
@@ -214,8 +224,6 @@ class PlaybackActivity : AppCompatActivity() {
                     "Accept-Language" to "en-US,en;q=0.9",
                 )
             )
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(15_000)
 
         val dataSourceFactory = DynamicHeaderDataSourceFactory(
             baseHttpDataSourceFactory,
@@ -358,6 +366,24 @@ class PlaybackActivity : AppCompatActivity() {
     }
 
     private fun releasePlayer() {
+        if (watchSessionStartTime > 0L && streamId >= 0) {
+            val durationMs = System.currentTimeMillis() - watchSessionStartTime
+            val durationSec = (durationMs / 1000).toInt()
+            if (durationSec > 0) {
+                val currentStreamId = streamId
+                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        ApiClient.service.recordWatchTime(
+                            com.sportstv.mobile.model.WatchTimeRequest(currentStreamId, durationSec)
+                        )
+                        Log.d(TAG, "Recorded watch time: $durationSec seconds for stream $currentStreamId")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to record watch time", e)
+                    }
+                }
+            }
+            watchSessionStartTime = 0L
+        }
         player?.release()
         player = null
     }
@@ -371,12 +397,31 @@ class PlaybackActivity : AppCompatActivity() {
         super.onDestroy()
         releasePlayer()
     }
+
+    private fun getUnsafeOkHttpClient(): OkHttpClient {
+        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers() = arrayOf<X509Certificate>()
+        })
+
+        val sslContext = SSLContext.getInstance("SSL")
+        sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+        val sslSocketFactory = sslContext.socketFactory
+
+        return OkHttpClient.Builder()
+            .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            .hostnameVerifier { _, _ -> true }
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
 }
 
 // ─── Custom DataSource classes for dynamic headers ─────────────────────────
 
 class DynamicHeaderDataSource(
-    private val baseDataSource: DefaultHttpDataSource,
+    private val baseDataSource: androidx.media3.datasource.HttpDataSource,
     private val iframeUrl: String,
     private val cfDomain: String
 ) : DataSource {
@@ -444,7 +489,7 @@ class DynamicHeaderDataSource(
 }
 
 class DynamicHeaderDataSourceFactory(
-    private val baseFactory: DefaultHttpDataSource.Factory,
+    private val baseFactory: androidx.media3.datasource.HttpDataSource.Factory,
     private val iframeUrl: String,
     private val cfDomain: String
 ) : DataSource.Factory {

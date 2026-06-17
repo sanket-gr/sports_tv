@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="yellow_star">#FBBF24</color>
-    <color name="gray_outline">#64748B</color>
+    <color name="gray_outline">#94A3B8</color>
+    <color name="glass_text_primary">#FFFFFF</color>
+    <color name="glass_text_secondary">#CBD5E1</color>
+    <color name="neon_green">#10B981</color>
+    <color name="neon_blue">#3B82F6</color>
+    <color name="glass_bottom_nav">#20000000</color>
 </resources>

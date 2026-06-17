@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit
 // ─── Backend URL configuration ───────────────────────────────────────────────
 // IMPORTANT: Change this to your PC's local IP when testing on a real TV device.
 // Use "http://10.0.2.2:8000/" ONLY for Android Studio emulator.
-// Use "http://192.168.100.58:8000/" for a real TV on the same WiFi network.
+// Use "http://192.168.100.104:8000/" for a real TV on the same WiFi network.
 //
 // TIP: Run `ipconfig` on your PC and use the IPv4 address shown.
-const val BASE_URL = "http://192.168.100.58:8000/"
+const val BASE_URL = "http://192.168.100.104:8000/"
 
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 interface SportsApiService {

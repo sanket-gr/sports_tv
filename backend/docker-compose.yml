@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: sportstv_backend
+    restart: always
+    ports:
+      - "80:8000"
+    volumes:
+      # Mount the database so it persists across restarts and rebuilds
+      - ./sports_tv.db:/app/sports_tv.db

@@ -77,6 +77,17 @@ class Stream(Base):
     category        = relationship("Category", back_populates="streams")
 
 
+class WatchAnalytics(Base):
+    __tablename__ = "watch_analytics"
+
+    id               = Column(Integer, primary_key=True, index=True)
+    stream_id        = Column(Integer, ForeignKey("streams.id"), nullable=False)
+    duration_seconds = Column(Integer, nullable=False, default=0)
+    created_at       = Column(DateTime, default=datetime.utcnow)
+
+    stream           = relationship("Stream")
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

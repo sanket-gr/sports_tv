@@ -35,7 +35,7 @@ import asyncio
 import httpx
 from playwright.async_api import async_playwright
 
-from database import get_db, create_tables, Category, Stream, SourceConfig
+from database import get_db, create_tables, Category, Stream, SourceConfig, WatchAnalytics
 from scrapers import extract_async as run_scrapers_extract
 
 import logging
@@ -160,15 +160,26 @@ app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
 # ADMIN  –  HTML dashboard
 # ===========================================================================
 
+from sqlalchemy.sql import func
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     categories = db.query(Category).order_by(Category.sort_order).all()
     streams    = db.query(Stream).order_by(Stream.created_at.desc()).all()
     sources    = db.query(SourceConfig).all()
+    
+    total_seconds = db.query(func.sum(WatchAnalytics.duration_seconds)).scalar() or 0
+    total_hours = round(total_seconds / 3600, 1)
+    
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={"categories": categories, "streams": streams, "sources": sources},
+        context={
+            "categories": categories, 
+            "streams": streams, 
+            "sources": sources,
+            "total_hours": total_hours
+        },
     )
 
 
@@ -538,6 +549,28 @@ def _stream_to_dict(s: Stream, request: Request = None) -> dict:
         "is_live":       s.is_live,
         "created_at":    s.created_at.isoformat() if s.created_at else "",
     }
+
+
+from pydantic import BaseModel
+
+class WatchTimeRequest(BaseModel):
+    stream_id: int
+    duration_seconds: int
+
+@app.post("/api/analytics/watch_time")
+def add_watch_time(data: WatchTimeRequest, db: Session = Depends(get_db)):
+    """Record watch time from the mobile/TV app clients."""
+    # Ensure stream exists
+    stream = db.query(Stream).filter_by(id=data.stream_id).first()
+    if stream and data.duration_seconds > 0:
+        analytics = WatchAnalytics(
+            stream_id=data.stream_id,
+            duration_seconds=data.duration_seconds
+        )
+        db.add(analytics)
+        db.commit()
+        return {"status": "success", "recorded": data.duration_seconds}
+    return JSONResponse(status_code=400, content={"detail": "Invalid stream or duration"})
 
 
 @app.post("/admin/sources/toggle/{source_id}")
