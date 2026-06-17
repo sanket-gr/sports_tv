@@ -42,6 +42,10 @@ class StreamAdapter(
             binding.tvCategory.text = stream.categoryName
             binding.tvLiveBadge.visibility = if (stream.isLive) View.VISIBLE else View.GONE
 
+            // Show favorite star indicator if favorited
+            val isFavorite = FavoritesManager.isFavorite(itemView.context, stream.id)
+            binding.tvFavoriteStar.visibility = if (isFavorite) View.VISIBLE else View.GONE
+
             // Glide thumbnail loading with default android icon as placeholder
             Glide.with(itemView.context)
                 .load(stream.thumbnailUrl)

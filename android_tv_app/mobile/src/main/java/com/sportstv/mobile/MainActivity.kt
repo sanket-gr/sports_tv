@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var streamAdapter: StreamAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var statusTextView: TextView
+    private var currentTabId = R.id.navigation_home
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +48,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         streamAdapter = StreamAdapter(emptyList()) { stream ->
-            // Launch PlaybackActivity when stream card is clicked
-            PlaybackActivity.start(this, stream)
+            // Launch StreamDetailBottomSheet when stream card is clicked
+            val bottomSheet = StreamDetailBottomSheet.newInstance(stream).apply {
+                onFavoritesChangedListener = {
+                    refreshCurrentView()
+                }
+            }
+            bottomSheet.show(supportFragmentManager, "stream_detail")
         }
         recyclerView.adapter = streamAdapter
 
@@ -57,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         // Setup bottom navigation selection listener
         binding.navView.setOnItemSelectedListener { item ->
+            currentTabId = item.itemId
             when (item.itemId) {
                 R.id.navigation_home -> {
                     showHomeView()
@@ -98,6 +105,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun refreshCurrentView() {
+        if (currentTabId == R.id.navigation_home) {
+            streamAdapter.notifyDataSetChanged()
+        } else if (currentTabId == R.id.navigation_favorites) {
+            showFavoritesView()
+        }
+    }
+
     private fun showHomeView() {
         binding.container.removeAllViews()
         if (allStreams.isEmpty()) {
@@ -111,13 +126,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFavoritesView() {
         binding.container.removeAllViews()
-        val favoritesPlaceholder = TextView(this).apply {
-            text = "Favorites screen placeholder\n(Favorites persistence will be implemented in Phase 8)"
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(32, 32, 32, 32)
-            setTextColor(0xFF64748B.toInt())
+        val favIds = FavoritesManager.getFavoriteIds(this)
+        val favStreams = allStreams.filter { favIds.contains(it.id) }
+
+        if (favStreams.isEmpty()) {
+            val favoritesPlaceholder = TextView(this).apply {
+                text = "No favorites added yet.\nTap on any stream card to add it to favorites."
+                textSize = 16f
+                gravity = Gravity.CENTER
+                setPadding(48, 48, 48, 48)
+                setTextColor(0xFF64748B.toInt())
+            }
+            binding.container.addView(favoritesPlaceholder)
+        } else {
+            binding.container.addView(recyclerView)
+            streamAdapter.updateData(favStreams)
         }
-        binding.container.addView(favoritesPlaceholder)
     }
 }

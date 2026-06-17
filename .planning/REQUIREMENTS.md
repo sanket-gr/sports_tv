@@ -26,14 +26,14 @@ Requirements for the initial Android Mobile App release.
 
 ### Favorites
 
-- [ ] **FAV-01**: Toggle channel favorite status
-- [ ] **FAV-02**: Display favorites list/row on the main screen
-- [ ] **FAV-03**: Persist favorites locally on the phone (e.g., SharedPreferences)
+- [x] **FAV-01**: Toggle channel favorite status
+- [x] **FAV-02**: Display favorites list/row on the main screen
+- [x] **FAV-03**: Persist favorites locally on the phone (e.g., SharedPreferences)
 
 ### Testing & Integration
 
 - [x] **TEST-01**: Set up standard Android mobile Gradle project in Android Studio
-- [ ] **TEST-02**: Verify building and testing on Android phone emulators
+- [x] **TEST-02**: Verify building and testing on Android phone emulators
 
 ## v2 Requirements
 
@@ -67,11 +67,11 @@ Explicitly excluded to prevent scope creep.
 | PLAY-01 | Phase 7 | Complete |
 | PLAY-02 | Phase 7 | Complete |
 | PLAY-03 | Phase 7 | Complete |
-| FAV-01 | Phase 8 | Pending |
-| FAV-02 | Phase 8 | Pending |
-| FAV-03 | Phase 8 | Pending |
+| FAV-01 | Phase 8 | Complete |
+| FAV-02 | Phase 8 | Complete |
+| FAV-03 | Phase 8 | Complete |
 | TEST-01 | Phase 5 | Complete |
-| TEST-02 | Phase 8 | Pending |
+| TEST-02 | Phase 8 | Complete |
 
 **Coverage:**
 - v1 requirements: 13 total
