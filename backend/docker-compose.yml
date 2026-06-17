@@ -8,5 +8,8 @@ services:
     ports:
       - "80:8000"
     volumes:
-      # Mount the database so it persists across restarts and rebuilds
-      - ./sports_tv.db:/app/sports_tv.db
+      # Mount the database directory so data persists across restarts and rebuilds
+      - ./db:/app/db
+    environment:
+      - DATABASE_URL=sqlite:///./db/sports_tv.db
+

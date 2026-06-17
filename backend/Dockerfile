@@ -19,4 +19,4 @@ ENV PYTHONUNBUFFERED=1
 
 # Start the FastAPI application
 # (In production we run migrations first to ensure DB is up to date)
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000"]

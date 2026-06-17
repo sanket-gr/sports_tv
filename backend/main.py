@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI):
     # In production, migrations should be applied via Alembic (e.g. `alembic upgrade head`)
     # For local SQLite development, we can still call create_tables if we want, but letting Alembic handle it is better.
     # We leave this commented out to enforce Alembic migrations.
-    # create_tables()
+    create_tables()
     
     db = next(get_db())
     if db.query(Category).count() == 0:
