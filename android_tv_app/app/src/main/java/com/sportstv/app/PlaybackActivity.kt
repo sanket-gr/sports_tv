@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.Button
 import android.widget.ProgressBar
@@ -72,6 +73,9 @@ class PlaybackActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Keep the screen on during video playback to prevent screensaver/sleep mode
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         setContentView(R.layout.activity_playback)
 
         playerView   = findViewById(R.id.player_view)
