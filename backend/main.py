@@ -27,9 +27,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Any
 
-from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks
+from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+import secrets
 from sqlalchemy.orm import Session
 import asyncio
 import httpx
@@ -141,6 +143,11 @@ async def lifespan(app: FastAPI):
 
     refresh_task = asyncio.create_task(stream_refresh_worker(app))
 
+    admin_username = os.environ.get("ADMIN_USERNAME")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_username or not admin_password:
+        logger.warning("WARNING: Admin panel is running WITHOUT authentication. Set ADMIN_USERNAME and ADMIN_PASSWORD env variables to secure it.")
+
     yield  # App runs here
     
     # Shutdown
@@ -156,6 +163,29 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
 
+security = HTTPBasic(auto_error=False)
+
+def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(security)):
+    admin_username = os.environ.get("ADMIN_USERNAME")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_username or not admin_password:
+        return True
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    correct_username = secrets.compare_digest(credentials.username, admin_username)
+    correct_password = secrets.compare_digest(credentials.password, admin_password)
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return True
+
 # ===========================================================================
 # ADMIN  –  HTML dashboard
 # ===========================================================================
@@ -163,7 +193,11 @@ app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
 from sqlalchemy.sql import func
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
     categories = db.query(Category).order_by(Category.sort_order).all()
     streams    = db.query(Stream).order_by(Stream.created_at.desc()).all()
     sources    = db.query(SourceConfig).all()
@@ -189,6 +223,7 @@ def add_category(
     icon:       str = Form("🏆"),
     sort_order: int = Form(99),
     db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
 ):
     existing = db.query(Category).filter_by(name=name).first()
     if not existing:
@@ -198,7 +233,11 @@ def add_category(
 
 
 @app.post("/admin/categories/{cat_id}/delete")
-def delete_category(cat_id: int, db: Session = Depends(get_db)):
+def delete_category(
+    cat_id: int,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
     cat = db.query(Category).filter_by(id=cat_id).first()
     if cat:
         db.delete(cat)
@@ -214,6 +253,7 @@ def add_stream(
     source_url:   str = Form(...),
     fallback_url: str = Form(""),
     db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
 ):
     """Submit a stream URL. Extraction runs in the background."""
     cat = db.query(Category).filter_by(id=category_id).first()
@@ -318,7 +358,11 @@ async def _run_extraction(stream_id: int, source_url: str, fallback_url: str, br
 
 
 @app.post("/admin/streams/{stream_id}/delete")
-def delete_stream(stream_id: int, db: Session = Depends(get_db)):
+def delete_stream(
+    stream_id: int,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
     stream = db.query(Stream).filter_by(id=stream_id).first()
     if stream:
         db.delete(stream)
@@ -330,6 +374,7 @@ def delete_stream(stream_id: int, db: Session = Depends(get_db)):
 def refresh_all_streams(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
 ):
     """Re-run extraction for all streams."""
     streams = db.query(Stream).filter(Stream.source_url != "").all()
@@ -345,6 +390,7 @@ def refresh_stream(
     stream_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
 ):
     """Re-run extraction for an existing stream (e.g., to get a fresh token)."""
     stream = db.query(Stream).filter_by(id=stream_id).first()
@@ -370,6 +416,7 @@ async def hls_proxy(
     request: Request,
     url: str,
     referer: str = "",
+    db: Session = Depends(get_db),
 ):
     """
     HLS reverse-proxy: fetches the given CDN URL server-side (ignoring SSL errors
@@ -378,6 +425,61 @@ async def hls_proxy(
     backend over plain HTTP on the local network.
     """
     import requests as req_lib
+    import socket
+    import ipaddress
+    import re
+    from fastapi.responses import PlainTextResponse
+
+    # 1. Parse URL & validate format
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.scheme not in ("http", "https"):
+            return PlainTextResponse("Forbidden: Invalid scheme", status_code=403)
+        hostname = parsed_url.hostname
+        if not hostname:
+            return PlainTextResponse("Forbidden: Invalid host", status_code=400)
+    except Exception:
+        return PlainTextResponse("Forbidden: Malformed URL", status_code=400)
+
+    # 2. Check if the IP is private (SSRF block)
+    try:
+        ip_addresses = socket.getaddrinfo(hostname, None)
+        for addr in ip_addresses:
+            ip_str = addr[4][0]
+            # Strip scope ID if present in IPv6 address
+            if "%" in ip_str:
+                ip_str = ip_str.split("%")[0]
+            ip = ipaddress.ip_address(ip_str)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                return PlainTextResponse("Forbidden: Private IP access is blocked", status_code=403)
+    except Exception as e:
+        # Host name resolution failure will naturally fail on request.get, but if it resolves to local, block it.
+        pass
+
+    # 3. Check domain whitelist from DB SourceConfigs
+    try:
+        active_sources = db.query(SourceConfig).filter(SourceConfig.is_active == True).all()
+        allowed_domains = ["hereisman.net", "aapmains.net", "sportsurge.ws", "watchmmafull.com", "jokertvguide.sx", "vidplayer.com", "vidplayer.live", "silverpathgardens.space", "virtualinfrastructure.space"]
+        for src in active_sources:
+            if src.domain:
+                allowed_domains.append(src.domain.lower())
+        
+        hostname_lower = hostname.lower()
+        is_allowed = False
+        is_raw_ip = bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', hostname))
+        
+        if is_raw_ip:
+            is_allowed = True
+        else:
+            for domain in allowed_domains:
+                if hostname_lower == domain or hostname_lower.endswith("." + domain):
+                    is_allowed = True
+                    break
+        
+        if not is_allowed:
+            return PlainTextResponse("Forbidden: Domain not whitelisted", status_code=403)
+    except Exception as e:
+        logger.error(f"Error validating proxy URL domain: {e}")
 
     if not referer:
         parsed = urllib.parse.urlparse(url)
@@ -390,10 +492,11 @@ async def hls_proxy(
         "Accept":     "*/*",
     }
 
+    # 4. Conditional SSL verification: only False for raw IP-based URLs
+    verify_ssl = not _needs_proxy(url)
     try:
-        resp = req_lib.get(url, headers=headers, verify=False, timeout=15, stream=True)
+        resp = req_lib.get(url, headers=headers, verify=verify_ssl, timeout=15, stream=True)
     except Exception as e:
-        from fastapi.responses import PlainTextResponse
         return PlainTextResponse(f"Proxy error: {e}", status_code=502)
 
     content_type = resp.headers.get("Content-Type", "application/octet-stream")
@@ -574,7 +677,12 @@ def add_watch_time(data: WatchTimeRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/admin/sources/toggle/{source_id}")
-def toggle_source(source_id: int, request: Request, db: Session = Depends(get_db)):
+def toggle_source(
+    source_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
     source = db.query(SourceConfig).filter_by(id=source_id).first()
     if source:
         source.is_active = not source.is_active
