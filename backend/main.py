@@ -720,6 +720,37 @@ async def health_check_sources(db: Session = Depends(get_db)):
     db.commit()
     return {"sources": results}
 
+
+@app.get("/download/tv")
+def download_tv_apk():
+    """Download the updated Android TV app APK directly."""
+    from fastapi.responses import FileResponse
+    import os
+    apk_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "apks", "tv.apk")
+    if not os.path.exists(apk_path):
+        raise HTTPException(status_code=404, detail="TV APK not found. Please compile and upload it.")
+    return FileResponse(
+        path=apk_path,
+        media_type="application/vnd.android.package-archive",
+        filename="SportsTv_Leanback.apk"
+    )
+
+
+@app.get("/download/mobile")
+def download_mobile_apk():
+    """Download the updated Android Mobile app APK directly."""
+    from fastapi.responses import FileResponse
+    import os
+    apk_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "apks", "mobile.apk")
+    if not os.path.exists(apk_path):
+        raise HTTPException(status_code=404, detail="Mobile APK not found. Please compile and upload it.")
+    return FileResponse(
+        path=apk_path,
+        media_type="application/vnd.android.package-archive",
+        filename="SportsTv_Mobile.apk"
+    )
+
+
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
