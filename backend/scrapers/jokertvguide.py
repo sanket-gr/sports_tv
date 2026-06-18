@@ -18,11 +18,9 @@ REFERER = "https://partner.nonamejose.sx/"
 class JokerTvGuideScraper(BaseScraper):
     async def _fetch_with_browser(self, url: str, browser: Any) -> str:
         from playwright.async_api import TimeoutError as PWTimeout
+        from .base import create_stealth_context
 
-        ctx = await browser.new_context(
-            user_agent=USER_AGENT,
-            extra_http_headers={"Referer": REFERER},
-        )
+        ctx = await create_stealth_context(browser, USER_AGENT, REFERER)
         page = await ctx.new_page()
         await page.route(
             "**cdn.jsdelivr.net/npm/disable-devtool**",
@@ -31,7 +29,17 @@ class JokerTvGuideScraper(BaseScraper):
         try:
             await page.goto(url, wait_until="networkidle", timeout=30_000)
         except PWTimeout:
-            await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            except Exception:
+                pass
+        
+        # Wait up to 15 seconds for __NEXT_DATA__ to appear (meaning Cloudflare resolved)
+        try:
+            await page.wait_for_selector("script#__NEXT_DATA__", timeout=15_000)
+        except Exception:
+            pass
+
         html = await page.content()
         await ctx.close()
         return html
@@ -95,10 +103,9 @@ class JokerTvGuideScraper(BaseScraper):
             if ".m3u8" in url:
                 captured.append(url)
 
-        ctx = await browser.new_context(
-            user_agent=USER_AGENT,
-            extra_http_headers={"Referer": REFERER},
-        )
+        from .base import create_stealth_context
+
+        ctx = await create_stealth_context(browser, USER_AGENT, REFERER)
         page = await ctx.new_page()
         page.on("request", _on_request)
         try:
@@ -129,8 +136,14 @@ class JokerTvGuideScraper(BaseScraper):
         current_browser = browser
         
         if not current_browser:
+            import os
+            from .base import parse_playwright_proxy
             local_playwright = await async_playwright().start()
-            current_browser = await local_playwright.chromium.launch(headless=True)
+            launch_kwargs = {"headless": True}
+            scraper_proxy = os.environ.get("SCRAPER_PROXY")
+            if scraper_proxy:
+                launch_kwargs["proxy"] = parse_playwright_proxy(scraper_proxy)
+            current_browser = await local_playwright.chromium.launch(**launch_kwargs)
             
         try:
             result: Dict[str, Any] = {"source_url": url, "iframe_url": "", "hls_url": ""}

@@ -1,4 +1,5 @@
 from typing import Any
+from .base import parse_playwright_proxy
 from .jokertvguide import JokerTvGuideScraper
 from .sportsurge import SportsurgeScraper
 from .watchmmafull import WatchMmaFullScraper

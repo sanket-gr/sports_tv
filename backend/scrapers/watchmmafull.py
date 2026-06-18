@@ -22,14 +22,25 @@ class WatchMmaFullScraper(BaseScraper):
         current_browser = browser
         
         if not current_browser:
+            import os
+            from .base import parse_playwright_proxy
             local_playwright = await async_playwright().start()
-            current_browser = await local_playwright.chromium.launch(headless=True)
+            launch_kwargs = {"headless": True}
+            scraper_proxy = os.environ.get("SCRAPER_PROXY")
+            if scraper_proxy:
+                launch_kwargs["proxy"] = parse_playwright_proxy(scraper_proxy)
+            current_browser = await local_playwright.chromium.launch(**launch_kwargs)
             
-        ctx = await current_browser.new_context(user_agent=USER_AGENT)
+        from .base import create_stealth_context
+        ctx = await create_stealth_context(current_browser, USER_AGENT)
         page = await ctx.new_page()
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            await page.wait_for_timeout(8000)
+            try:
+                # Wait for the link grid to appear (Cloudflare bypass or standard load)
+                await page.wait_for_selector(".watch-link-grid", timeout=12000)
+            except Exception:
+                await page.wait_for_timeout(8000)
             html = await page.content()
         except Exception as e:
             logger.error(f"Error loading watchmmafull page: {e}")

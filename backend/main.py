@@ -135,7 +135,13 @@ async def lifespan(app: FastAPI):
     # Launch persistent playwright session
     try:
         app.state.playwright = await async_playwright().start()
-        app.state.browser = await app.state.playwright.chromium.launch(headless=True)
+        launch_kwargs = {"headless": True}
+        scraper_proxy = os.environ.get("SCRAPER_PROXY")
+        if scraper_proxy:
+            from scrapers import parse_playwright_proxy
+            launch_kwargs["proxy"] = parse_playwright_proxy(scraper_proxy)
+            logger.info(f"Using scraper proxy for persistent browser session: {scraper_proxy}")
+        app.state.browser = await app.state.playwright.chromium.launch(**launch_kwargs)
     except Exception as e:
         logger.error(f"Failed to start playwright pooling: {e}")
         app.state.playwright = None
