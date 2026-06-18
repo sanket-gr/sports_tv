@@ -14,8 +14,9 @@ import java.util.concurrent.TimeUnit
 // IMPORTANT: Change this to your PC's local IP when testing on a real TV device.
 // Use "http://10.0.2.2:8000/" ONLY for Android Studio emulator.
 // Use "http://192.168.100.104:8000/" for a real TV on the same WiFi network.
-// PRODUCTION AWS: "http://13.126.62.185/"
-const val BASE_URL = "http://13.126.62.185/"
+// PRODUCTION AWS: "http://15.206.80.64/"
+const val BASE_URL = "http://15.206.80.64/"
+
 
 
 // ─── Retrofit interface ──────────────────────────────────────────────────────

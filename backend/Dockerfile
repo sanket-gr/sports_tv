@@ -1,5 +1,5 @@
-# Use official Playwright Python image to ensure all browser OS dependencies exist
-FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.60.0-jammy
+
 
 WORKDIR /app
 
