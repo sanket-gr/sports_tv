@@ -4,7 +4,7 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">13.126.62.185</domain>
+        <domain includeSubdomains="true">13.204.129.74</domain>
     </domain-config>
 
     <!-- Rest of the traffic must be HTTPS -->
