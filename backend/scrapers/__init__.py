@@ -4,6 +4,7 @@ from .jokertvguide import JokerTvGuideScraper
 from .sportsurge import SportsurgeScraper
 from .watchmmafull import WatchMmaFullScraper
 from .vidplayer import VidplayerScraper
+from .embedst import EmbedStScraper
 
 def extract(url: str) -> Any:
     pass # Keep for sync fallback if needed
@@ -18,6 +19,9 @@ async def extract_async(url: str, browser: Any = None) -> Any:
 
     if "watchmmafull.com" in url:
         return await WatchMmaFullScraper().extract(url, browser)
+
+    if "embed.st" in url:
+        return await EmbedStScraper().extract(url, browser)
 
     # Direct player URLs
     if "#" in url and not any(d in url for d in ["sportsurge.ws", "jokertvguide.sx", "nonamejose.sx"]):

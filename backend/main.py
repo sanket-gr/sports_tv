@@ -465,7 +465,7 @@ async def hls_proxy(
     # 3. Check domain whitelist from DB SourceConfigs
     try:
         active_sources = db.query(SourceConfig).filter(SourceConfig.is_active == True).all()
-        allowed_domains = ["hereisman.net", "aapmains.net", "sportsurge.ws", "watchmmafull.com", "jokertvguide.sx", "vidplayer.com", "vidplayer.live", "silverpathgardens.space", "virtualinfrastructure.space"]
+        allowed_domains = ["hereisman.net", "aapmains.net", "sportsurge.ws", "watchmmafull.com", "jokertvguide.sx", "vidplayer.com", "vidplayer.live", "silverpathgardens.space", "virtualinfrastructure.space", "embed.st", "strmd.st"]
         for src in active_sources:
             if src.domain:
                 allowed_domains.append(src.domain.lower())
