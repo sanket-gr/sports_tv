@@ -7,6 +7,6 @@
         <domain includeSubdomains="true">13.204.129.74</domain>
     </domain-config>
 
-    <!-- Rest of the traffic must be HTTPS -->
-    <base-config cleartextTrafficPermitted="false" />
+    <!-- Permit cleartext traffic globally to support raw IP backends and HTTP stream URLs -->
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>
