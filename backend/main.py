@@ -193,6 +193,28 @@ def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(secu
     return True
 
 # ===========================================================================
+# USER CLIENT  –  Web player dashboard
+# ===========================================================================
+
+@app.get("/", response_class=HTMLResponse)
+def index_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    categories = db.query(Category).order_by(Category.sort_order).all()
+    streams    = db.query(Stream).filter(Stream.is_live == True).order_by(Stream.created_at.desc()).all()
+    sources    = db.query(SourceConfig).filter(SourceConfig.is_active == True).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "categories": categories,
+            "streams": streams,
+            "sources": sources,
+        },
+    )
+
+# ===========================================================================
 # ADMIN  –  HTML dashboard
 # ===========================================================================
 
@@ -465,7 +487,7 @@ async def hls_proxy(
     # 3. Check domain whitelist from DB SourceConfigs
     try:
         active_sources = db.query(SourceConfig).filter(SourceConfig.is_active == True).all()
-        allowed_domains = ["hereisman.net", "aapmains.net", "sportsurge.ws", "watchmmafull.com", "jokertvguide.sx", "vidplayer.com", "vidplayer.live", "silverpathgardens.space", "virtualinfrastructure.space", "embed.st", "strmd.st"]
+        allowed_domains = ["hereisman.net", "aapmains.net", "sportsurge.ws", "watchmmafull.com", "jokertvguide.sx", "vidplayer.com", "vidplayer.live", "silverpathgardens.space", "virtualinfrastructure.space", "embed.st", "strmd.st", "cloudflarestorage.com"]
         for src in active_sources:
             if src.domain:
                 allowed_domains.append(src.domain.lower())
@@ -481,6 +503,10 @@ async def hls_proxy(
                 if hostname_lower == domain or hostname_lower.endswith("." + domain):
                     is_allowed = True
                     break
+            
+            # Allow kamfir domains (used by Sportsurge CDN providers)
+            if not is_allowed and re.search(r'\bkamfir\d*\.space$', hostname_lower):
+                is_allowed = True
         
         if not is_allowed:
             return PlainTextResponse("Forbidden: Domain not whitelisted", status_code=403)
@@ -508,7 +534,7 @@ async def hls_proxy(
     content_type = resp.headers.get("Content-Type", "application/octet-stream")
 
     # For HLS playlist files, rewrite URLs to route through this proxy
-    if "mpegurl" in content_type.lower() or url.endswith(".m3u8") or url.endswith(".txt"):
+    if "mpegurl" in content_type.lower() or url.endswith(".m3u8") or url.endswith(".txt") or "playlist" in url.lower():
         body = resp.text
         base_url = url.rsplit("/", 1)[0] + "/"
         server_base = str(request.base_url)  # e.g. http://192.168.100.61:8000/

@@ -72,3 +72,11 @@ def test_proxy_ssrf_mitigation():
         response = client.get("/api/proxy?url=https://sportsurge.ws/manifest.m3u8")
         assert response.status_code in (200, 502)
 
+
+def test_read_root():
+    with TestClient(app) as client:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "Sports TV" in response.text
+
+
