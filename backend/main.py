@@ -278,20 +278,40 @@ def add_stream(
     request: Request,
     background_tasks: BackgroundTasks,
     category_id:  int = Form(...),
-    source_url:   str = Form(...),
+    source_url:   str = Form(""),
     fallback_url: str = Form(""),
+    title:        str = Form(""),
+    hls_url:      str = Form(""),
     db: Session = Depends(get_db),
     authenticated: bool = Depends(get_current_admin),
 ):
-    """Submit a stream URL. Extraction runs in the background."""
+    """Submit a stream URL. Extraction runs in the background, or added manually."""
     cat = db.query(Category).filter_by(id=category_id).first()
     if not cat:
         return RedirectResponse("/admin?error=category_not_found", status_code=303)
 
+    # If direct HLS URL is provided, bypass Playwright scraper
+    if hls_url:
+        stream = Stream(
+            category_id  = category_id,
+            title        = title or "Manual Stream",
+            source_url   = source_url or hls_url,
+            fallback_url = fallback_url,
+            hls_url      = hls_url,
+            hls_updated_at = datetime.utcnow(),
+            is_live      = True,
+        )
+        db.add(stream)
+        db.commit()
+        return RedirectResponse("/admin", status_code=303)
+
+    if not source_url:
+        return RedirectResponse("/admin?error=missing_source_url", status_code=303)
+
     # Create placeholder immediately so admin can see it
     stream = Stream(
         category_id  = category_id,
-        title        = "Extracting...",
+        title        = title or "Extracting...",
         source_url   = source_url,
         fallback_url = fallback_url,
         is_live      = True,

@@ -280,7 +280,7 @@
     <div class="panel">
       <div class="panel-title">➕ Add New Stream</div>
       <form method="post" action="/admin/streams">
-        <div class="form-row">
+        <div class="form-row" style="margin-bottom: 12px;">
           <div class="form-group">
             <label>Category</label>
             <select name="category_id" required>
@@ -290,19 +290,30 @@
             </select>
           </div>
           <div class="form-group" style="flex:3;">
-            <label>Stream Page URL (jokertvguide.sx or partner.nonamejose.sx link)</label>
+            <label>Stream Page URL (For Auto-Extraction)</label>
             <input type="url" name="source_url" class="wide"
-                   placeholder="https://partner.nonamejose.sx/..."
-                   required>
+                   placeholder="https://partner.nonamejose.sx/...">
           </div>
           <div class="form-group" style="flex:3;">
             <label>Fallback URL (Optional)</label>
             <input type="url" name="fallback_url" class="wide"
                    placeholder="https://watchmmafull.com/...">
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:3;">
+            <label>Custom Title (Optional / Required if manual)</label>
+            <input type="text" name="title" class="wide"
+                   placeholder="e.g. Real Madrid vs Barcelona">
+          </div>
+          <div class="form-group" style="flex:5;">
+            <label>Direct HLS URL (Optional - Bypasses Scraper, e.g. .m3u8 link)</label>
+            <input type="url" name="hls_url" class="wide"
+                   placeholder="https://.../playlist.m3u8">
+          </div>
           <div class="form-group" style="flex:none;">
             <label>&nbsp;</label>
-            <button type="submit" class="btn btn-primary">🚀 Extract &amp; Add</button>
+            <button type="submit" class="btn btn-primary">🚀 Add Stream</button>
           </div>
         </div>
       </form>
