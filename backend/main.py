@@ -360,8 +360,9 @@ async def _run_extraction(stream_id: int, source_url: str, fallback_url: str, br
         if not results:
             stream = db.query(Stream).filter(Stream.id == stream_id).first()
             if stream:
-                stream.title = "[ERROR] Extraction failed"
-            db.commit()
+                logger.info(f"Extraction failed: no results. Deleting stream {stream_id}")
+                db.delete(stream)
+                db.commit()
             return
             
         # Update original stream with the first result
@@ -370,6 +371,12 @@ async def _run_extraction(stream_id: int, source_url: str, fallback_url: str, br
             return
             
         first_data = results[0]
+        # Check if the extracted data is an error or missing HLS link
+        if first_data.get("title", "").startswith("[ERROR]") or not first_data.get("hls_url"):
+            logger.info(f"Extraction failed: title is error or hls_url is missing. Deleting stream {stream_id}")
+            db.delete(stream)
+            db.commit()
+            return
         stream.title = first_data.get("title", "Unknown")
         stream.sport = first_data.get("sport", "")
         stream.participants = first_data.get("participants", "")
@@ -410,10 +417,10 @@ async def _run_extraction(stream_id: int, source_url: str, fallback_url: str, br
             
         db.commit()
     except Exception as e:
+        logger.error(f"Extraction failed for stream {stream_id}: {e}. Deleting stream.")
         stream = db.query(Stream).filter(Stream.id == stream_id).first()
         if stream:
-            stream.title = f"[ERROR] {e}"
-            stream.progress = 100
+            db.delete(stream)
             db.commit()
     finally:
         db.close()

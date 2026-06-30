@@ -737,40 +737,40 @@
     form.submit();
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.stream-checkbox');
+  function updateBulkDeleteVisibility() {
     const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
-    
-    function updateBulkDeleteVisibility() {
-      const checkedCount = document.querySelectorAll('.stream-checkbox:checked').length;
-      if (checkedCount > 0) {
-        bulkDeleteBtn.style.display = 'inline-block';
-        bulkDeleteBtn.textContent = `🗑️ Delete Selected (${checkedCount})`;
-      } else {
-        bulkDeleteBtn.style.display = 'none';
-      }
+    if (!bulkDeleteBtn) return;
+    const checkedCount = document.querySelectorAll('.stream-checkbox:checked').length;
+    if (checkedCount > 0) {
+      bulkDeleteBtn.style.display = 'inline-block';
+      bulkDeleteBtn.textContent = `🗑️ Delete Selected (${checkedCount})`;
+    } else {
+      bulkDeleteBtn.style.display = 'none';
     }
-    
-    if (selectAll) {
-      selectAll.addEventListener('change', (e) => {
-        checkboxes.forEach(cb => {
-          cb.checked = e.target.checked;
-        });
-        updateBulkDeleteVisibility();
+  }
+
+  // Dynamic Select All using Event Delegation
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'select-all') {
+      const checkboxes = document.querySelectorAll('.stream-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
       });
-    }
-    
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', () => {
-        if (!cb.checked && selectAll) {
+      updateBulkDeleteVisibility();
+    } else if (e.target && e.target.classList.contains('stream-checkbox')) {
+      const selectAll = document.getElementById('select-all');
+      const checkboxes = document.querySelectorAll('.stream-checkbox');
+      const checkedCount = document.querySelectorAll('.stream-checkbox:checked').length;
+      
+      if (selectAll) {
+        if (!e.target.checked) {
           selectAll.checked = false;
-        } else if (selectAll && document.querySelectorAll('.stream-checkbox:checked').length === checkboxes.length) {
+        } else if (checkedCount === checkboxes.length) {
           selectAll.checked = true;
         }
-        updateBulkDeleteVisibility();
-      });
-    });
+      }
+      updateBulkDeleteVisibility();
+    }
   });
 </script>
 </body>
