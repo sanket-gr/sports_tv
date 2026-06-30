@@ -1,5 +1,7 @@
 package com.sportstv.mobile
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -76,6 +78,9 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        // Handle deep link if app is launched via URI
+        handleIntent(intent)
     }
 
     private fun fetchStreams() {
@@ -142,5 +147,36 @@ class MainActivity : AppCompatActivity() {
             binding.container.addView(recyclerView)
             streamAdapter.updateData(favStreams)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val action = intent.action
+        val data: Uri? = intent.data
+        if (Intent.ACTION_VIEW == action && data != null) {
+            val id = parseStreamId(data)
+            if (id != -1) {
+                PlaybackActivity.startWithId(this, id)
+            } else {
+                android.widget.Toast.makeText(this, "Invalid stream ID in deep link", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun parseStreamId(uri: Uri): Int {
+        val idParam = uri.getQueryParameter("id")
+        if (!idParam.isNullOrEmpty()) {
+            return idParam.toIntOrNull() ?: -1
+        }
+        val pathSegments = uri.pathSegments
+        if (pathSegments.isNotEmpty()) {
+            return pathSegments.last().toIntOrNull() ?: -1
+        }
+        return -1
     }
 }

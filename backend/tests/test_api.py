@@ -80,3 +80,63 @@ def test_read_root():
         assert "Sports TV" in response.text
 
 
+def test_api_version():
+    with TestClient(app) as client:
+        response = client.get("/api/version")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["version_code"] == 2
+        assert "apk_url" in data
+        assert "tv.apk" in data["apk_url"]
+
+
+def test_bulk_delete():
+    with TestClient(app) as client:
+        # 1. Get categories to find a valid category_id
+        response = client.get("/api/categories")
+        assert response.status_code == 200
+        categories = response.json()
+        assert len(categories) > 0
+        cat_id = categories[0]["id"]
+        
+        # 2. Add two manual streams
+        resp1 = client.post("/admin/streams", data={
+            "category_id": cat_id,
+            "title": "Stream to delete 1",
+            "hls_url": "https://example.com/stream1.m3u8"
+        }, follow_redirects=False)
+        assert resp1.status_code == 303
+        
+        resp2 = client.post("/admin/streams", data={
+            "category_id": cat_id,
+            "title": "Stream to delete 2",
+            "hls_url": "https://example.com/stream2.m3u8"
+        }, follow_redirects=False)
+        assert resp2.status_code == 303
+        
+        # Get active streams to find their IDs
+        resp_streams = client.get("/api/streams?live_only=false")
+        assert resp_streams.status_code == 200
+        streams = resp_streams.json()
+        
+        # Find the IDs of the streams we just added
+        stream1 = next(s for s in streams if s["title"] == "Stream to delete 1")
+        stream2 = next(s for s in streams if s["title"] == "Stream to delete 2")
+        id1 = stream1["id"]
+        id2 = stream2["id"]
+        
+        # 3. Call bulk delete
+        resp_delete = client.post("/admin/streams/bulk-delete", data={
+            "stream_ids": [str(id1), str(id2)]
+        }, follow_redirects=False)
+        assert resp_delete.status_code == 303
+        
+        # 4. Verify they are deleted
+        resp_streams_after = client.get("/api/streams?live_only=false")
+        assert resp_streams_after.status_code == 200
+        streams_after = resp_streams_after.json()
+        assert not any(s["id"] == id1 for s in streams_after)
+        assert not any(s["id"] == id2 for s in streams_after)
+
+
+

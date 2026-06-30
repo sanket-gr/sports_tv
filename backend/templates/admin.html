@@ -4,27 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sports TV – Admin Panel</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #0d0f14;
-    --surface:   #161b25;
-    --surface2:  #1e2535;
-    --border:    #2a3244;
-    --accent:    #3b82f6;
-    --accent2:   #6366f1;
-    --green:     #22c55e;
-    --red:       #ef4444;
-    --orange:    #f97316;
-    --text:      #e2e8f0;
-    --muted:     #64748b;
-    --radius:    12px;
+    --bg:          #F7F5F2; /* Warm limestone */
+    --surface:     #FFFFFF; /* White card surface */
+    --surface2:    #EBEAE6; /* Warm grey/cream secondary surface */
+    --border:      rgba(108, 114, 120, 0.25); /* Slate borders */
+    --accent:      #B8422E; /* Boston Clay tertiary accent */
+    --accent2:     #6C7278; /* Slate */
+    --green:       #4E7A63; /* Forest green */
+    --red:         #B8422E; /* Boston Clay */
+    --orange:      #C87A53; /* Warm clay orange */
+    --text:        #1A1C1E; /* Deep ink for text */
+    --muted:       #6C7278; /* Slate for muted captions */
+    --radius:      8px;     /* Shape rounding */
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Public Sans', sans-serif;
     min-height: 100vh;
   }
 
@@ -45,9 +45,7 @@
   }
   .sidebar-logo h1 {
     font-size: 20px; font-weight: 700;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text);
   }
   .sidebar-logo p { font-size: 12px; color: var(--muted); margin-top: 4px; }
   .sidebar-nav a {
@@ -85,8 +83,8 @@
   .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
   .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
   .form-group input, .form-group select {
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 4px;
     padding: 10px 14px; font-size: 14px; font-family: inherit;
     transition: border-color 0.15s;
   }
@@ -95,12 +93,12 @@
   }
   .form-group input.wide { min-width: 320px; }
   .btn {
-    padding: 10px 20px; border-radius: 8px; border: none;
+    padding: 10px 20px; border-radius: 4px; border: none;
     font-size: 14px; font-weight: 600; cursor: pointer;
     font-family: inherit; transition: all 0.15s; white-space: nowrap;
   }
   .btn-primary  { background: var(--accent);  color: #fff; }
-  .btn-primary:hover  { background: #2563eb; }
+  .btn-primary:hover  { background: #9C3120; }
   .btn-success  { background: var(--green);   color: #fff; }
   .btn-danger   { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 6px 14px; font-size: 12px; }
   .btn-danger:hover   { background: var(--red); color: #fff; }
@@ -112,8 +110,9 @@
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
     text-align: left; padding: 10px 14px;
-    color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
+    color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase;
+    border-bottom: 2px solid var(--border);
+    font-family: 'Space Grotesk', sans-serif;
   }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:hover { background: var(--surface2); }
@@ -122,11 +121,11 @@
     display: inline-block; padding: 3px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
   }
-  .badge-live    { background: rgba(34,197,94,.15); color: var(--green); }
-  .badge-extract { background: rgba(249,115,22,.15); color: var(--orange); }
-  .badge-error   { background: rgba(239,68,68,.15);  color: var(--red); }
+  .badge-live    { background: rgba(78, 122, 99, 0.12); color: var(--green); }
+  .badge-extract { background: rgba(200, 122, 83, 0.12); color: var(--orange); }
+  .badge-error   { background: rgba(184, 66, 46, 0.12);  color: var(--red); }
   .url-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; font-family: monospace; }
-  .hls-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-family: monospace; color: #67e8f9; }
+  .hls-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-family: monospace; color: var(--accent); }
   .hls-container {
     display: flex;
     align-items: center;
@@ -138,7 +137,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 4px 6px;
     display: inline-flex;
     align-items: center;
@@ -149,7 +148,7 @@
   .btn-copy:hover {
     color: var(--text);
     border-color: var(--accent);
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(184, 66, 46, 0.05);
   }
   .btn-copy:active {
     transform: scale(0.92);
@@ -166,12 +165,12 @@
     z-index: 9999;
   }
   .toast-item {
-    background: var(--surface2);
+    background: var(--surface);
     border: 1px solid var(--accent);
     color: var(--text);
     padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(26, 28, 30, 0.15);
     font-size: 13px;
     font-weight: 500;
     display: flex;
@@ -203,19 +202,48 @@
   .actions { display: flex; gap: 8px; }
 
   /* ── Stats row ── */
-  .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 24px;
-    display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px;
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
   }
-  .stat-card .value { font-size: 28px; font-weight: 700; }
-  .stat-card .label { font-size: 12px; color: var(--muted); }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px rgba(26, 28, 30, 0.05);
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(26, 28, 30, 0.08);
+  }
+  .stat-card .value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .stat-card .label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
 
   /* ── Notification ── */
   .notice {
-    background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3);
-    color: #93c5fd; border-radius: 8px; padding: 12px 16px;
+    background: rgba(184, 66, 46, 0.06); border: 1px solid rgba(184, 66, 46, 0.2);
+    color: var(--accent); border-radius: var(--radius); padding: 12px 16px;
     font-size: 13px; margin-bottom: 20px;
   }
 
@@ -251,23 +279,29 @@
 
     <!-- Stats -->
     <div class="stats">
-      <div class="stat-card">
-        <div class="value" style="color: var(--accent);">{{ streams | length }}</div>
+      <div class="stat-card" id="stat-total-streams">
+        <div class="value">{{ streams | length }}</div>
         <div class="label">Total Streams</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="stat-hls-streams">
         <div class="value" style="color: var(--green);">
           {{ streams | selectattr('hls_url') | list | length }}
         </div>
         <div class="label">With HLS Link</div>
       </div>
-      <div class="stat-card">
-        <div class="value" style="color: var(--accent2);">{{ categories | length }}</div>
+      <div class="stat-card" id="stat-categories">
+        <div class="value">{{ categories | length }}</div>
         <div class="label">Categories</div>
       </div>
-      <div class="stat-card">
-        <div class="value" style="color: var(--orange);">{{ total_hours }}</div>
+      <div class="stat-card" id="stat-hours-watched">
+        <div class="value">{{ total_hours }}</div>
         <div class="label">Hours Watched</div>
+      </div>
+      <div class="stat-card" id="stat-scraper-health">
+        <div class="value" style="color: var(--accent);">
+          {{ online_sources }}<span style="font-size: 18px; color: var(--muted); font-weight: 500;">/{{ total_sources }}</span>
+        </div>
+        <div class="label">Scraper Health</div>
       </div>
     </div>
 
@@ -276,12 +310,12 @@
       automatically extract the direct HLS stream URL in the background — the TV app will pick it up instantly.
     </div>
 
-    <!-- Add Stream Form -->
+    <!-- Add Auto-Extracting Stream Form -->
     <div class="panel">
-      <div class="panel-title">➕ Add New Stream</div>
+      <div class="panel-title">➕ Add Auto-Extracting Stream</div>
       <form method="post" action="/admin/streams">
         <div class="form-row" style="margin-bottom: 12px;">
-          <div class="form-group">
+          <div class="form-group" style="max-width: 200px;">
             <label>Category</label>
             <select name="category_id" required>
               {% for cat in categories %}
@@ -292,7 +326,7 @@
           <div class="form-group" style="flex:3;">
             <label>Stream Page URL (For Auto-Extraction)</label>
             <input type="url" name="source_url" class="wide"
-                   placeholder="https://partner.nonamejose.sx/...">
+                   placeholder="https://partner.nonamejose.sx/..." required>
           </div>
           <div class="form-group" style="flex:3;">
             <label>Fallback URL (Optional)</label>
@@ -302,18 +336,44 @@
         </div>
         <div class="form-row">
           <div class="form-group" style="flex:3;">
-            <label>Custom Title (Optional / Required if manual)</label>
+            <label>Custom Title (Optional)</label>
             <input type="text" name="title" class="wide"
                    placeholder="e.g. Real Madrid vs Barcelona">
           </div>
-          <div class="form-group" style="flex:5;">
-            <label>Direct HLS URL (Optional - Bypasses Scraper, e.g. .m3u8 link)</label>
+          <div class="form-group" style="flex:none;">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary">🚀 Start Extraction</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Add Direct Stream Form -->
+    <div class="panel">
+      <div class="panel-title">🔗 Add Direct HLS Link</div>
+      <form method="post" action="/admin/streams">
+        <div class="form-row">
+          <div class="form-group" style="max-width: 200px;">
+            <label>Category</label>
+            <select name="category_id" required>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label>Stream Title</label>
+            <input type="text" name="title" class="wide"
+                   placeholder="e.g. TSN 1 HD" required>
+          </div>
+          <div class="form-group" style="flex:4;">
+            <label>Direct HLS URL (.m3u8 link)</label>
             <input type="url" name="hls_url" class="wide"
-                   placeholder="https://.../playlist.m3u8">
+                   placeholder="https://example.com/playlist.m3u8" required>
           </div>
           <div class="form-group" style="flex:none;">
             <label>&nbsp;</label>
-            <button type="submit" class="btn btn-primary">🚀 Add Stream</button>
+            <button type="submit" class="btn btn-success">🔗 Add Direct Link</button>
           </div>
         </div>
       </form>
@@ -367,15 +427,19 @@
     <div class="panel">
       <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
         <div class="panel-title" style="margin-bottom:0;">🟢 Active Streams</div>
-        <form method="post" action="/admin/streams/refresh-all">
-            <button type="submit" class="btn btn-primary" style="font-size: 13px;">🔄 Refresh All</button>
-        </form>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button id="btn-bulk-delete" onclick="deleteSelectedStreams()" class="btn btn-danger" style="font-size: 13px; display: none;">🗑️ Delete Selected</button>
+          <form method="post" action="/admin/streams/refresh-all">
+              <button type="submit" class="btn btn-primary" style="font-size: 13px;">🔄 Refresh All</button>
+          </form>
+        </div>
       </div>
       {% if streams %}
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all"></th>
               <th>#</th>
               <th>Category</th>
               <th>Match</th>
@@ -388,6 +452,7 @@
           <tbody>
             {% for s in streams %}
             <tr data-stream-id="{{ s.id }}">
+              <td style="text-align: center;"><input type="checkbox" name="stream_ids" value="{{ s.id }}" class="stream-checkbox"></td>
               <td style="color:var(--muted);">{{ s.id }}</td>
               <td>{{ s.category.icon if s.category else '' }} {{ s.category.name if s.category else '—' }}</td>
               <td class="title-cell">
@@ -643,6 +708,70 @@
   }
 
   setInterval(formatTimestamps, 30000);
+
+  // Bulk deletion functionality
+  function deleteSelectedStreams() {
+    const checkedBoxes = document.querySelectorAll('.stream-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+      alert('Please select at least one stream to delete.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete ${checkedBoxes.length} selected stream(s)?`)) {
+      return;
+    }
+    
+    // Create form dynamically to submit POST request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/streams/bulk-delete';
+    
+    checkedBoxes.forEach(cb => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'stream_ids';
+      input.value = cb.value;
+      form.appendChild(input);
+    });
+    
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.stream-checkbox');
+    const bulkDeleteBtn = document.getElementById('btn-bulk-delete');
+    
+    function updateBulkDeleteVisibility() {
+      const checkedCount = document.querySelectorAll('.stream-checkbox:checked').length;
+      if (checkedCount > 0) {
+        bulkDeleteBtn.style.display = 'inline-block';
+        bulkDeleteBtn.textContent = `🗑️ Delete Selected (${checkedCount})`;
+      } else {
+        bulkDeleteBtn.style.display = 'none';
+      }
+    }
+    
+    if (selectAll) {
+      selectAll.addEventListener('change', (e) => {
+        checkboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+        updateBulkDeleteVisibility();
+      });
+    }
+    
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (!cb.checked && selectAll) {
+          selectAll.checked = false;
+        } else if (selectAll && document.querySelectorAll('.stream-checkbox:checked').length === checkboxes.length) {
+          selectAll.checked = true;
+        }
+        updateBulkDeleteVisibility();
+      });
+    });
+  });
 </script>
 </body>
 </html>

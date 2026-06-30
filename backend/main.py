@@ -31,6 +31,7 @@ from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks, HTTPExcept
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import secrets
 from sqlalchemy.orm import Session
 import asyncio
@@ -77,6 +78,9 @@ async def stream_refresh_worker(app: FastAPI):
             ).all()
             
             for stream in stale_streams:
+                # Skip direct HLS links
+                if stream.source_url == stream.hls_url or (stream.source_url and ".m3u8" in stream.source_url.lower()):
+                    continue
                 # If it's missing updated_at, or it's been > 15 minutes
                 if not stream.hls_updated_at or (now - stream.hls_updated_at).total_seconds() > 900:
                     logger.info(f"Auto-refreshing stale stream {stream.id}: {stream.title}")
@@ -169,6 +173,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Sports TV Admin API", version="1.0.0", lifespan=lifespan)
 
+# Serve APKs statically
+APKS_DIR = Path(__file__).parent / "apks"
+app.mount("/apks", StaticFiles(directory=str(APKS_DIR)), name="apks")
+
 security = HTTPBasic(auto_error=False)
 
 def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(security)):
@@ -233,6 +241,10 @@ def admin_dashboard(
     total_seconds = db.query(func.sum(WatchAnalytics.duration_seconds)).scalar() or 0
     total_hours = round(total_seconds / 3600, 1)
     
+    # Calculate source health metrics for dashboard
+    online_sources = sum(1 for s in sources if s.last_health_status == "Online")
+    total_sources = len(sources)
+    
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
@@ -240,7 +252,9 @@ def admin_dashboard(
             "categories": categories, 
             "streams": streams, 
             "sources": sources,
-            "total_hours": total_hours
+            "total_hours": total_hours,
+            "online_sources": online_sources,
+            "total_sources": total_sources
         },
     )
 
@@ -418,17 +432,37 @@ def delete_stream(
     return RedirectResponse("/admin", status_code=303)
 
 
+@app.post("/admin/streams/bulk-delete")
+async def bulk_delete_streams(
+    request: Request,
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
+    """Delete multiple streams at once."""
+    form_data = await request.form()
+    stream_ids = [int(x) for x in form_data.getlist("stream_ids") if str(x).isdigit()]
+    if stream_ids:
+        db.query(Stream).filter(Stream.id.in_(stream_ids)).delete(synchronize_session=False)
+        db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+
 @app.post("/admin/streams/refresh-all")
 def refresh_all_streams(
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     authenticated: bool = Depends(get_current_admin),
 ):
     """Re-run extraction for all streams."""
     streams = db.query(Stream).filter(Stream.source_url != "").all()
+    browser = getattr(request.app.state, "browser", None)
     for stream in streams:
+        # Skip direct HLS links
+        if stream.source_url == stream.hls_url or (stream.source_url and ".m3u8" in stream.source_url.lower()):
+            continue
         stream.title = "Re-extracting..."
-        background_tasks.add_task(_run_extraction, stream.id, stream.source_url)
+        background_tasks.add_task(_run_extraction, stream.id, stream.source_url, stream.fallback_url or "", browser)
     db.commit()
     return RedirectResponse("/admin", status_code=303)
 
@@ -436,6 +470,7 @@ def refresh_all_streams(
 @app.post("/admin/streams/{stream_id}/refresh")
 def refresh_stream(
     stream_id: int,
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     authenticated: bool = Depends(get_current_admin),
@@ -443,9 +478,16 @@ def refresh_stream(
     """Re-run extraction for an existing stream (e.g., to get a fresh token)."""
     stream = db.query(Stream).filter_by(id=stream_id).first()
     if stream:
+        if stream.source_url == stream.hls_url or (stream.source_url and ".m3u8" in stream.source_url.lower()):
+            # For direct streams, refresh simply updates hls_updated_at to keep it fresh
+            stream.hls_updated_at = datetime.utcnow()
+            db.commit()
+            return RedirectResponse("/admin", status_code=303)
+            
         stream.title = "Re-extracting..."
         db.commit()
-        background_tasks.add_task(_run_extraction, stream_id, stream.source_url)
+        browser = getattr(request.app.state, "browser", None)
+        background_tasks.add_task(_run_extraction, stream_id, stream.source_url, stream.fallback_url or "", browser)
     return RedirectResponse("/admin", status_code=303)
 
 
@@ -601,6 +643,17 @@ async def hls_proxy(
     )
 
 
+
+@app.get("/api/version")
+def api_version(request: Request, platform: str = "tv"):
+    base_url = str(request.base_url)
+    apk_filename = "tv.apk" if platform == "tv" else "mobile.apk"
+    return {
+        "version_code": 2,
+        "version_name": "1.1",
+        "apk_url": f"{base_url}apks/{apk_filename}",
+        "release_notes": "In-app self-update checker added."
+    }
 
 @app.get("/api/categories")
 def api_categories(db: Session = Depends(get_db)):

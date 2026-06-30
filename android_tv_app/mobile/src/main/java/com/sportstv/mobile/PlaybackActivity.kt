@@ -49,6 +49,13 @@ class PlaybackActivity : AppCompatActivity() {
             }
             context.startActivity(intent)
         }
+
+        fun startWithId(context: Context, streamId: Int) {
+            val intent = Intent(context, PlaybackActivity::class.java).apply {
+                putExtra("stream_id", streamId)
+            }
+            context.startActivity(intent)
+        }
     }
 
     private lateinit var binding: ActivityPlaybackBinding
@@ -307,6 +314,8 @@ class PlaybackActivity : AppCompatActivity() {
 
                 var freshUrl  = ""
                 var freshCfDomain = ""
+                var freshTitle = ""
+                var freshParticipants = ""
                 repeat(4) { attempt ->
                     if (freshUrl.isNotBlank()) return@repeat
                     delay(5_000)
@@ -316,13 +325,18 @@ class PlaybackActivity : AppCompatActivity() {
                         freshUrl      = stream.hlsUrl
                         iframeUrl     = stream.iframeUrl
                         freshCfDomain = stream.cfDomain
+                        freshTitle    = stream.title
+                        freshParticipants = stream.participants
                     }
                 }
 
                 if (freshUrl.isBlank()) {
                     val stream = ApiClient.service.getStream(streamId)
                     freshUrl      = stream.hlsUrl
+                    iframeUrl     = stream.iframeUrl
                     freshCfDomain = stream.cfDomain
+                    freshTitle    = stream.title
+                    freshParticipants = stream.participants
                 }
 
                 if (freshUrl.isBlank()) {
@@ -331,6 +345,7 @@ class PlaybackActivity : AppCompatActivity() {
                 } else {
                     hlsUrl   = freshUrl
                     cfDomain = freshCfDomain
+                    binding.tvTitle.text = if (freshParticipants.isNotBlank()) freshParticipants else freshTitle
                     initPlayer(freshUrl)
                 }
             } catch (e: Exception) {

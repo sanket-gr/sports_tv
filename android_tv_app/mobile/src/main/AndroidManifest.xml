@@ -27,6 +27,15 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="sportstv" android:host="watch" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="13.204.129.74" />
+                <data android:pathPrefix="/watch" />
+            </intent-filter>
         </activity>
 
         <!-- Playback Activity with dynamic orientation handling -->
