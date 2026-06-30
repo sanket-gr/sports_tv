@@ -139,4 +139,45 @@ def test_bulk_delete():
         assert not any(s["id"] == id2 for s in streams_after)
 
 
+@pytest.mark.anyio
+async def test_cdnlivetv_scraper():
+    mock_html = """
+    <html>
+    <head>
+    <title>TSN 1 CA</title>
+    </head>
+    <body>
+    <script>
+    function GtlpmtvgfT(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';try{return atob(s)}catch(e){}};
+    var kxykkJHw='aHR0cHM';
+    var PjGdhEkJ='Og';
+    var LmIaOhFd='Ly8';
+    var ktLhxjEY='Y2RubGl2ZXR2';
+    var aGDrpQMu='LnR2';
+    var iNwPOSvx='L3NlY3VyZS9hcGkvdjEv';
+    var gwaLSzdJ='NmEyODhkMmE4MWQ4MTkyYmI3NmNjMTcy';
+    var TGeIiwCb='L3BsYXlsaXN0';
+    var ATkeXEmr='Lm0zdTg';
+    var VSQScTBR='P3Rva2VuPU5tRXl';
+    var JXodLzMRVoOI=GtlpmtvgfT(kxykkJHw)+GtlpmtvgfT(PjGdhEkJ)+GtlpmtvgfT(LmIaOhFd)+GtlpmtvgfT(ktLhxjEY)+GtlpmtvgfT(aGDrpQMu)+GtlpmtvgfT(iNwPOSvx)+GtlpmtvgfT(gwaLSzdJ)+GtlpmtvgfT(TGeIiwCb)+GtlpmtvgfT(ATkeXEmr)+GtlpmtvgfT(VSQScTBR);
+    </script>
+    </body>
+    </html>
+    """
+    from scrapers.cdnlivetv import CdnLiveTvScraper
+    import unittest.mock
+    
+    async def mock_get(*args, **kwargs):
+        class MockResponse:
+            text = mock_html
+            status_code = 200
+        return MockResponse()
+        
+    scraper = CdnLiveTvScraper()
+    with unittest.mock.patch('httpx.AsyncClient.get', new=mock_get):
+        res = await scraper.extract("https://cdnlivetv.tv/api/v1/channels/player/?name=TSN%201")
+        assert res["hls_url"].startswith("https://cdnlivetv.tv/secure/api/v1/6a288d2a81d8192bb76cc172/playlist.m3u8?token=NmEy")
+        assert res["title"] == "TSN 1 CA"
+
+
 

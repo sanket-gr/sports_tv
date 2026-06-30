@@ -5,6 +5,7 @@ from .sportsurge import SportsurgeScraper
 from .watchmmafull import WatchMmaFullScraper
 from .vidplayer import VidplayerScraper
 from .embedst import EmbedStScraper
+from .cdnlivetv import CdnLiveTvScraper
 
 def extract(url: str) -> Any:
     pass # Keep for sync fallback if needed
@@ -14,6 +15,9 @@ async def extract_async(url: str, browser: Any = None) -> Any:
     Full extraction pipeline routing to modular scrapers.
     Returns a dict with metadata, OR a list of dicts if multiple servers are found.
     """
+    if "cdnlivetv.tv" in url:
+        return await CdnLiveTvScraper().extract(url, browser)
+
     if "sportsurge.ws" in url:
         return await SportsurgeScraper().extract(url, browser)
 
