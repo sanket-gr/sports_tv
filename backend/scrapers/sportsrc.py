@@ -1,40 +1,136 @@
 import os
 import httpx
 import logging
+import re
+import asyncio
 from typing import Dict, Any, List, Optional
+from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://api.sportsrc.org/v2/"
-
-def get_api_key() -> Optional[str]:
-    return os.environ.get("SPORTSRC_API_KEY")
+BASE_URL = "https://streamed.pk/"
 
 async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None, extra_params: Optional[Dict[str, Any]] = None) -> Any:
-    api_key = get_api_key()
-    params = {"type": endpoint_type}
-    if match_id:
-        # Match ID/slug
-        params["id"] = match_id
-    if extra_params:
-        params.update(extra_params)
-
-    if api_key:
-        headers = {"X-API-KEY": api_key}
-        url = BASE_URL
-        # In query param option as fallback if headers fail, but headers recommended
+    if endpoint_type == "matches":
+        # Fetch from streamed.pk/api/matches/live
         try:
-            async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
-                response = await client.get(url, headers=headers, params=params)
+            async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
+                response = await client.get(f"{BASE_URL}api/matches/live")
                 if response.status_code == 200:
-                    return response.json()
-                else:
-                    logger.warning(f"SportSRC API returned status {response.status_code}: {response.text}")
+                    matches = response.json()
+                    # Map to the format the TV app expects: id, title, status, sport, date
+                    mapped_matches = []
+                    for m in matches:
+                        mapped_matches.append({
+                            "id": m.get("id", ""),
+                            "title": m.get("title", ""),
+                            "status": "inprogress",
+                            "sport": m.get("category", "football"),
+                            "date": str(m.get("date", ""))
+                        })
+                    return mapped_matches
         except Exception as e:
-            logger.error(f"Error calling SportSRC API: {e}")
+            logger.error(f"Error fetching live matches from streamed.pk: {e}")
+            return []
 
-    # Fallback to simulated/mock data matching SportSRC v2.5 schema
+    elif endpoint_type == "detail" and match_id:
+        # 1. Fetch live matches to find this match's sources
+        try:
+            async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
+                response = await client.get(f"{BASE_URL}api/matches/live")
+                if response.status_code != 200:
+                    return {"id": match_id, "title": "Error", "hls_url": ""}
+                
+                matches = response.json()
+                match_data = next((m for m in matches if m.get("id") == match_id), None)
+                if not match_data:
+                    return {"id": match_id, "title": "Match not found/ended", "hls_url": ""}
+                
+                sources = match_data.get("sources", [])
+                if not sources:
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
+                
+                # Use the first available source
+                source = sources[0]
+                source_name = source.get("source")
+                source_id = source.get("id")
+                
+                # 2. Get the stream player URL
+                stream_resp = await client.get(f"{BASE_URL}api/stream/{source_name}/{source_id}")
+                if stream_resp.status_code != 200:
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
+                
+                streams = stream_resp.json()
+                if not streams:
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
+                
+                # Pick the first stream (prefer English/HD if possible, or just the first)
+                stream = streams[0]
+                embed_url = stream.get("embedUrl", "")
+                if not embed_url:
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
+                
+                # 3. Use Playwright to resolve the embedUrl to a direct HLS link
+                hls_url = await extract_hls_from_embed(embed_url)
+                
+                return {
+                    "id": match_id,
+                    "title": match_data.get("title", ""),
+                    "stream_url": embed_url,
+                    "hls_url": hls_url
+                }
+        except Exception as e:
+            logger.error(f"Error fetching match details for {match_id}: {e}")
+            return {"id": match_id, "title": "Error", "hls_url": ""}
+
+    # Fallback to simulated/mock data matching SportSRC v2.5 schema for stats, lineups etc
     return get_mock_data(endpoint_type, match_id, extra_params)
+
+async def extract_hls_from_embed(embed_url: str) -> str:
+    logger.info(f"Extracting HLS from embed: {embed_url}")
+    captured = []
+    
+    async def on_request(request):
+        url = request.url
+        if ".m3u8" in url and url not in captured:
+            captured.append(url)
+            
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                viewport={"width": 1280, "height": 720},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            )
+            # Inject navigator.webdriver override to bypass simple bot checks
+            await context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            """)
+            page = await context.new_page()
+            page.on("request", on_request)
+            
+            try:
+                await page.goto(embed_url, wait_until="domcontentloaded", timeout=15000)
+            except Exception as e:
+                logger.warning(f"Playwright navigation warning: {e}")
+                
+            # Wait for requests to settle or HLS to be found
+            for _ in range(8):
+                if captured:
+                    break
+                await asyncio.sleep(1)
+                
+            await context.close()
+            await browser.close()
+    except Exception as e:
+        logger.error(f"Playwright HLS extraction failed: {e}")
+        
+    if captured:
+        logger.info(f"Successfully extracted HLS URL: {captured[0]}")
+        return captured[0]
+        
+    logger.warning(f"Failed to extract HLS from {embed_url}")
+    return ""
 
 def get_mock_data(endpoint_type: str, match_id: Optional[str] = None, extra_params: Optional[Dict[str, Any]] = None) -> Any:
     # Use fallback mock data for testing UI and endpoints
