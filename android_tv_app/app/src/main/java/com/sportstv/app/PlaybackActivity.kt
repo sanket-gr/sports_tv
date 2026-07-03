@@ -209,6 +209,7 @@ class PlaybackActivity : FragmentActivity() {
         val referer = cleanReferer(iframeUrl)
 
         val baseHttpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(true)
             .setUserAgent("Mozilla/5.0 (Linux; Android 11; TV) AppleWebKit/537.36 Chrome/119 Safari/537.36")
             .setDefaultRequestProperties(
                 mapOf(
