@@ -164,7 +164,8 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun playSelectedServer(streamServer: SportSrcStream) {
-        binding.tvServersHint.text = "Resolving stream, please wait..."
+        _binding?.tvServersHint?.text = "Resolving stream, please wait..."
+        val ctx = context ?: return
         lifecycleScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
@@ -186,13 +187,15 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
                         iframeUrl = streamServer.embedUrl,
                         cfDomain = try { android.net.Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
                     )
-                    PlaybackActivity.start(requireContext(), updatedStream)
-                    dismiss()
+                    if (isAdded) {
+                        PlaybackActivity.start(ctx, updatedStream)
+                        dismiss()
+                    }
                 } else {
-                    binding.tvServersHint.text = "Failed to resolve stream link."
+                    _binding?.tvServersHint?.text = "Failed to resolve stream link."
                 }
             } catch (e: Exception) {
-                binding.tvServersHint.text = "Error resolving stream: ${e.localizedMessage}"
+                _binding?.tvServersHint?.text = "Error resolving stream: ${e.localizedMessage}"
             }
         }
     }
