@@ -69,10 +69,6 @@ class MainFragment : BrowseSupportFragment() {
         
         // ── Long click → toggle favorite ─────────────────────────────────────
         onItemViewSelectedListener = OnItemViewSelectedListener { _, _, _, _ -> }
-        setOnItemViewClickedListener { _, item, _, _ ->
-             val stream = item as StreamItem
-             PlaybackActivity.start(requireContext(), stream)
-        }
         // Leanback doesn't natively support long click nicely through OnItemViewLongClickedListener unless we set it on the row or implement a custom listener
         // We will just use the standard View.OnLongClickListener in CardPresenter... wait, Leanback has setOnItemViewLongClickedListener.
         // Actually it doesn't. We'll set the listener on the ViewHolder view in CardPresenter... wait, easier: OnItemViewClickedListener for short click.
@@ -100,7 +96,7 @@ class MainFragment : BrowseSupportFragment() {
                         StreamItem(
                             id = match.id.hashCode(),
                             categoryId = -1,
-                            categoryName = "SportSRC",
+                            categoryName = "Live Matches",
                             categoryIcon = "🏆",
                             title = match.title,
                             participants = match.title,
@@ -131,12 +127,12 @@ class MainFragment : BrowseSupportFragment() {
                     rowsAdapter.add(ListRow(HeaderItem("⭐ Favorites"), listRowAdapter))
                 }
 
-                // 1.5. SportSRC Live Matches Row
+                // 1.5. Live Matches Row
                 if (sportSrcStreams.isNotEmpty()) {
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     sportSrcStreams.forEach { listRowAdapter.add(it) }
-                    rowsAdapter.add(ListRow(HeaderItem("🏆 SportSRC Live Matches"), listRowAdapter))
+                    rowsAdapter.add(ListRow(HeaderItem("🏆 Live Matches"), listRowAdapter))
                 }
 
                 // 2. Live Categories

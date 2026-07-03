@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ─────────────────────────────────────────────────────────────────────────
   # Cloudflare bypass sidecar — solves CF challenges and returns cookies
@@ -34,6 +32,5 @@ services:
       - DATABASE_URL=sqlite:///./db/sports_tv.db
       # Point the scraper at the FlareSolverr sidecar (service name resolves in Docker)
       - FLARESOLVERR_URL=http://flaresolverr:8191
-      - SPORTSRC_API_KEY=${SPORTSRC_API_KEY}
       # Optional: uncomment to add a residential proxy as an extra bypass layer
       # - SCRAPER_PROXY=http://user:pass@proxy.example.com:8001
