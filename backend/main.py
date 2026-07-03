@@ -624,7 +624,6 @@ async def hls_proxy(
     # For HLS playlist files, rewrite URLs to route through this proxy
     if "mpegurl" in content_type.lower() or url.endswith(".m3u8") or url.endswith(".txt") or "playlist" in url.lower():
         body = resp.text
-        base_url = url.rsplit("/", 1)[0] + "/"
         server_base = str(request.base_url)  # e.g. http://192.168.100.61:8000/
 
         lines = body.splitlines()
@@ -632,11 +631,8 @@ async def hls_proxy(
         for line in lines:
             stripped = line.strip()
             if stripped and not stripped.startswith("#"):
-                # It's a URI line – make it absolute then proxy it
-                if stripped.startswith("http://") or stripped.startswith("https://"):
-                    abs_url = stripped
-                else:
-                    abs_url = base_url + stripped
+                # Use urljoin to correctly resolve both relative and root-relative URIs
+                abs_url = urllib.parse.urljoin(url, stripped)
                 proxy_url = f"{server_base}api/proxy?url={urllib.parse.quote(abs_url, safe='')}&referer={urllib.parse.quote(referer, safe='')}"
                 rewritten.append(proxy_url)
             else:
