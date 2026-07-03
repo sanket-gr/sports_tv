@@ -18,3 +18,10 @@ data class StreamItem(
     @SerializedName("thumbnail_url") val thumbnailUrl: String,
     @SerializedName("is_live")       val isLive: Boolean,
 )
+
+data class VersionInfo(
+    @SerializedName("version_code")  val versionCode: Int,
+    @SerializedName("version_name")  val versionName: String,
+    @SerializedName("apk_url")       val apkUrl: String,
+    @SerializedName("release_notes") val releaseNotes: String
+)

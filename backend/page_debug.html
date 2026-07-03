@@ -1,0 +1,258 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security check</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1419;
+      color: #e7e9ea;
+    }
+    .card {
+      text-align: center;
+      padding: 2rem 2.5rem;
+      max-width: 24rem;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 1.25rem;
+      border: 3px solid #38444d;
+      border-top-color: #1d9bf0;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem; }
+    p { margin: 0; font-size: 0.875rem; color: #8b98a5; }
+    .err { color: #f4212e; margin-top: 1rem; display: none; }
+    #turnstile-wrap { margin-top: 1rem; min-height: 65px; }
+    #slider-wrap { margin-top: 1rem; min-height: 200px; display: none; }
+    .card.wide { max-width: 22rem; }
+     
+    #slider-wrap .slider-captcha-stage { width: 320px; margin: 0 auto; }
+    #slider-wrap .slider-captcha-stage > img {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #slider-wrap .slider-captcha-stage > img:first-of-type {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+      z-index: 1;
+    }
+    #slider-wrap .slider-captcha-stage > img:last-of-type {
+      top: 57px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+  </style>
+  <style>/* Default styles for slider-captcha-js */
+.slider-captcha-stage {
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.slider-captcha-stage canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Theme: Light */
+.slider-captcha-light .slider-captcha-bar {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+}
+.slider-captcha-light .slider-captcha-thumb {
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+.slider-captcha-light .slider-captcha-status {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  color: #333;
+}
+.slider-captcha-light .slider-captcha-status.ok {
+  color: #16a34a;
+}
+.slider-captcha-light .slider-captcha-status.err {
+  color: #dc2626;
+}
+
+/* Theme: Dark */
+.slider-captcha-dark .slider-captcha-bar {
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,.08);
+  color: #e5e7eb;
+}
+.slider-captcha-dark .slider-captcha-thumb {
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.slider-captcha-dark .slider-captcha-status {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #e5e7eb;
+}
+.slider-captcha-dark .slider-captcha-status.ok {
+  color: #16a34a;
+}
+.slider-captcha-dark .slider-captcha-status.err {
+  color: #dc2626;
+}
+
+.slider-captcha-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: var(--w, 320px);
+  height: 44px;
+  background: #0b1220;
+  border-radius: 999px;
+  margin-top: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+.slider-captcha-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.slider-captcha-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg,rgba(37,99,235,.25),rgba(37,99,235,.35));
+}
+
+.slider-captcha-thumb {
+  position: relative;
+  z-index: 2;
+  margin-left: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,.15);
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.slider-captcha-thumb:active {
+  cursor: grabbing;
+}
+.slider-captcha-thumb svg {
+  width: 18px;
+  height: 18px;
+  opacity: .9;
+}
+
+.slider-captcha-status {
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.03);
+}
+.slider-captcha-status.ok {
+  color: #16a34a;
+  border-color: rgba(22,163,74,.4);
+}
+.slider-captcha-status.err {
+  color: #dc2626;
+  border-color: rgba(220,38,38,.4);
+}
+.slider-captcha-status.shake {
+  animation: shake .35s linear;
+}
+@keyframes shake {
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  50%{transform:translateX(6px)}
+  75%{transform:translateX(-4px)}
+  100%{transform:translateX(0)}
+}
+
+.slider-captcha-refresh {
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* Loading overlay and spinner */
+.slider-captcha-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.6);
+  z-index: 15;
+}
+
+.slider-captcha-loading .spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #999;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="spinner" id="spinner" style="display: none;"></div>
+    <h1>Checking your browser</h1>
+    <p id="status">Verification failed</p>
+    <div id="turnstile-wrap"></div>
+    <div id="slider-wrap"></div>
+    <p class="err" id="error" style="display: block;">Too many requests. Try again later.</p>
+  </div>
+  <script>
+    window.__ANTIBOT__ = {"passTtlSec":86400,"returnPath":"/88abfb11/36ff7822/4a86def3","scoringEnabled":true,"sliderEnabled":true,"turnstileSiteKey":""};
+  </script>
+  <script>(function(e,t){typeof exports=="object"&&typeof module!="undefined"?module.exports=t():typeof define=="function"&&define.amd?define(t):(e=typeof globalThis!="undefined"?globalThis:e||self,e.SliderCaptcha=t())})(this,function(){"use strict";const e={bgSize:{width:320,height:160},puzzleSize:{width:60,left:0}};class t{constructor(e={root:null}){this.solved=!1,this._dpr=window.devicePixelRatio||1,this.opt=Object.assign({root:null,width:320,height:160,pieceSize:44,tolerance:6,imageUrl:null,fit:"cover",crossOrigin:null,theme:"light",onSuccess:()=>{},onFail:()=>{},onRefresh:()=>{},pieceTop:0},e),this.root=typeof this.opt.root=="string"?document.querySelector(this.opt.root):this.opt.root,this.stage=document.createElement("div"),this.stage.className="slider-captcha-stage";const t=typeof this.opt.width=="number"?this.opt.width+"px":this.opt.width;this.stage.style.width=t,this.stage.style.height=this.opt.height+"px",this.root.appendChild(this.stage),this.bgImgEl=document.createElement("img"),this.bgImgEl.style.position="absolute",this.bgImgEl.style.width="100%",this.bgImgEl.style.height="100%",this.bgImgEl.style.objectFit="cover",this.pieceImgEl=document.createElement("img"),this.pieceImgEl.style.position="absolute",this.pieceImgEl.style.width="44px",this.pieceImgEl.style.cursor="grab",this.bgCanvas=document.createElement("canvas"),this.cutCanvas=document.createElement("canvas"),this.pieceCanvas=document.createElement("canvas"),this.pieceCanvas.style.cursor="grab",this.bar=document.createElement("div"),this.bar.className="slider-captcha-bar",this.track=document.createElement("div"),this.track.className="slider-captcha-track",this.fill=document.createElement("div"),this.fill.className="slider-captcha-fill",this.track.appendChild(this.fill),this.thumb=document.createElement("div"),this.thumb.className="slider-captcha-thumb",this.thumb.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7"/></svg>',this.thumb.style.cursor="grab",this.status=document.createElement("div"),this.status.className="slider-captcha-status",this.status.innerText="Slide to verify",this.bar.append(this.track,this.thumb,this.status),this.bar.style.width=t,this.root.appendChild(this.bar),this.root.classList.remove("slider-captcha-light","slider-captcha-dark"),this.root.classList.add(this.opt.theme==="dark"?"slider-captcha-dark":"slider-captcha-light"),this._bindDrag(),this.numericWidth=typeof this.opt.width=="number"?this.opt.width:this.stage.offsetWidth||320,this.numericHeight=typeof this.opt.height=="number"?this.opt.height:this.stage.offsetHeight||160,[this.bgCanvas,this.cutCanvas,this.pieceCanvas].forEach(e=>{var n;e.width=this.numericWidth*this._dpr,e.height=this.numericHeight*this._dpr,e.style.width=t,e.style.height=this.numericHeight+"px",(n=e.getContext("2d"))===null||n===0[0]?0[0]:n.setTransform(this._dpr,0,0,this._dpr,0,0)}),this.loadingBox=document.createElement("div"),this.loadingBox.className="slider-captcha-loading",this.loadingBox.appendChild(document.createElement("div")).className="spinner",this.stage.style.position="relative",this.stage.appendChild(this.loadingBox),this._showLoading(!1),this.refreshBtn=document.createElement("div"),this.refreshBtn.className="slider-captcha-refresh",this.refreshBtn.innerHTML='<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#333"><path d="M866.133333 573.013333a42.666667 42.666667 0 0 0-53.333333 27.733334A304.64 304.64 0 0 1 519.68 810.666667 302.933333 302.933333 0 0 1 213.333333 512a302.933333 302.933333 0 0 1 306.346667-298.666667 309.76 309.76 0 0 1 198.4 71.253334l-92.586667-15.36a42.666667 42.666667 0 0 0-49.066666 35.413333 42.666667 42.666667 0 0 0 35.413333 49.066667l180.906667 29.866666h7.253333a42.666667 42.666667 0 0 0 14.506667-2.56 14.08 14.08 0 0 0 4.266666-2.56 33.28 33.28 0 0 0 8.533334-4.693333l3.84-4.693333c0-2.133333 3.84-3.84 5.546666-6.4s0-4.266667 2.133334-5.973334a57.173333 57.173333 0 0 0 2.986666-7.68l32-170.666666a42.666667 42.666667 0 0 0-85.333333-16.213334l-11.52 61.866667A392.96 392.96 0 0 0 519.68 128 388.266667 388.266667 0 0 0 128 512a388.266667 388.266667 0 0 0 391.68 384A389.12 389.12 0 0 0 896 626.346667a42.666667 42.666667 0 0 0-29.866667-53.333334z"/></svg>',this.refreshBtn.style.cssText=`
+      position:absolute;top:8px;right:8px;cursor:pointer;
+      background:#fff;border:1px solid #ddd;border-radius:50%;padding:4px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+      transition:background 0.2s;
+      color:#333;
+      z-index:20;
+    `,this.refreshBtn.onmouseover=()=>{this.refreshBtn.style.background="#f0f0f0"},this.refreshBtn.onmouseout=()=>{this.refreshBtn.style.background="#fff"},this.stage.appendChild(this.refreshBtn),this.refreshBtn.addEventListener("click",()=>this.refresh()),this._seed(),this.refresh()}_showLoading(e){this.loadingBox&&(this.loadingBox.style.display=e?"flex":"none"),this.cutCanvas&&this.pieceCanvas&&(this.cutCanvas.style.visibility=e?"hidden":"visible",this.pieceCanvas.style.visibility=e?"hidden":"visible")}_seed(){const t=this.opt.pieceSize||44,e=8;this.targetX=Math.floor(Math.random()*(this.numericWidth-t-e)+e),this.targetY=Math.floor(Math.random()*(this.numericHeight-t-e)+e)}async refresh(){var e,t;this.solved=!1;try{this.numericWidth=typeof this.opt.width=="number"?this.opt.width:this.stage.offsetWidth||320,this.numericHeight=typeof this.opt.height=="number"?this.opt.height:this.stage.offsetHeight||160,this._seed(),await this._drawBackground(),(!this.bgImgEl.src||!this.pieceImgEl.src)&&(this._prepareCutout(),this._drawPiece(0)),this.fill.style.width="0px",this.thumb.style.transform="translateX(0px)",this.status&&(this.status.innerText="Slide to verify",this.status.className="slider-captcha-status"),(e=(t=this.opt).onRefresh)===null||e===0[0]?0[0]:e.call(t),this._resetPosition()}catch(e){console.error("SliderCaptcha refresh failed:",e)}}async _drawBackground(){const e=this.bgCanvas.getContext("2d");e.clearRect(0,0,this.numericWidth,this.numericHeight),this._showLoading(!0);try{if(this.opt.request){const{bgUrl:e,puzzleUrl:t}=await this.opt.request();if(this.bgImgEl&&this.pieceImgEl){const n=this.opt.pieceSize||44;this.bgImgEl.src=e,this.bgImgEl.style.position="absolute",this.bgImgEl.style.top="0",this.bgImgEl.style.left="0",this.bgImgEl.style.width="100%",this.bgImgEl.style.height="100%",this.bgImgEl.style.objectFit="cover",this.bgImgEl.style.zIndex="1",this.pieceImgEl.src=t,this.pieceImgEl.style.position="absolute",this.pieceImgEl.style.top=(this.opt.pieceTop||0)+"px",this.pieceImgEl.style.left="0",this.pieceImgEl.style.width=n+"px",this.pieceImgEl.style.height=n+"px",this.pieceImgEl.style.zIndex="10",this.pieceImgEl.style.cursor="grab"}this._puzzleImage=0[0],this.stage.appendChild(this.bgImgEl),this.stage.appendChild(this.pieceImgEl)}else{this.bgCanvas.parentNode||(this.stage.append(this.bgCanvas,this.cutCanvas,this.pieceCanvas),this.bgCanvas.style.position="absolute",this.bgCanvas.style.top="0",this.bgCanvas.style.left="0",this.cutCanvas.style.position="absolute",this.cutCanvas.style.top="0",this.cutCanvas.style.left="0",this.cutCanvas.style.zIndex="5",this.pieceCanvas.style.position="absolute",this.pieceCanvas.style.top="0",this.pieceCanvas.style.left="0",this.pieceCanvas.style.zIndex="10");let t=this.opt.imageUrl;if(!t){const e=typeof this.opt.width=="number"?this.opt.width:this.root.offsetWidth||320,n=typeof this.opt.height=="number"?this.opt.height:this.root.offsetHeight||160;t=`https://picsum.photos/${e}/${n}?random=${Date.now()}`,this.opt.crossOrigin="anonymous"}const n=await this._loadImage(t,this.opt.crossOrigin||0[0]);this._drawImageFit(e,n,this.numericWidth,this.numericHeight,this.opt.fit)}}catch(t){console.warn("Image load failed, fallback to gradient:",t),this._drawGradient(e)}this._showLoading(!1)}_drawGradient(e){const t=e.createLinearGradient(0,0,this.numericWidth,this.numericHeight);t.addColorStop(0,"#0b1020"),t.addColorStop(1,"#131c34"),e.fillStyle=t,e.fillRect(0,0,this.numericWidth,this.numericHeight)}_drawImageFit(e,t,n,s,o="cover"){const i=t.naturalWidth||t.width,a=t.naturalHeight||t.height;if(!i||!a||!n||!s)return;if(o==="stretch"){e.drawImage(t,0,0,n,s);return}const r=o==="cover"?Math.max(n/i,s/a):Math.min(n/i,s/a),c=i*r,l=a*r,d=(n-c)/2,u=(s-l)/2;e.drawImage(t,d,u,c,l)}_prepareCutout(){const t=this.opt.pieceSize||44,s=this.targetX,o=this.targetY,i=8,n=new Path2D;n.moveTo(s+i,o),n.lineTo(s+t/3,o),n.arc(s+t/2,o,t/6,Math.PI,0,!0),n.lineTo(s+t-i,o),n.arcTo(s+t,o,s+t,o+i,i),n.lineTo(s+t,o+t/3),n.arc(s+t,o+t/2,t/6,-Math.PI/2,Math.PI/2,!1),n.lineTo(s+t,o+t-i),n.arcTo(s+t,o+t,s+t-i,o+t,i),n.lineTo(s+2*t/3,o+t),n.arc(s+t/2,o+t,t/6,0,Math.PI,!0),n.lineTo(s+i,o+t),n.arcTo(s,o+t,s,o+t-i,i),n.lineTo(s,o+2*t/3),n.arc(s,o+t/2,t/6,Math.PI/2,-Math.PI/2,!0),n.lineTo(s,o+i),n.arcTo(s,o,s+i,o,i),n.closePath(),this._piecePath=n;const e=this.cutCanvas.getContext("2d"),a=this.cutCanvas.width/this._dpr,r=this.cutCanvas.height/this._dpr;e.clearRect(0,0,a,r),e.save(),e.fillStyle="rgba(0,0,0,.45)",e.fillRect(0,0,a,r),e.globalCompositeOperation="destination-out",e.lineJoin="round",e.lineCap="round",e.lineWidth=2,e.stroke(n),e.fill(n),e.restore(),e.save(),e.globalCompositeOperation="source-over",e.fillStyle="rgba(255,255,255,0.45)",e.fill(n),e.restore(),e.save(),e.globalCompositeOperation="source-over",e.strokeStyle="rgba(0,0,0,0.25)",e.lineWidth=3,e.shadowColor="rgba(0,0,0,0.4)",e.shadowBlur=4,e.stroke(n),e.restore(),e.save(),e.strokeStyle="#fff",e.lineWidth=2,e.shadowColor="rgba(0,0,0,0.3)",e.shadowBlur=2,e.lineJoin="round",e.lineCap="round",e.stroke(n),e.restore()}_drawPiece(e){if(!this._piecePath)return;const t=this.pieceCanvas.getContext("2d");t.clearRect(0,0,this.numericWidth,this.numericHeight),t.save(),t.clip(this._piecePath),t.drawImage(this.bgCanvas,0,0),t.restore(),t.save(),t.strokeStyle="#fff",t.lineWidth=1.5,t.shadowColor="rgba(0,0,0,0.3)",t.shadowBlur=2,t.stroke(this._piecePath),t.restore(),this.pieceCanvas.style.transform=`translateX(${e-this.targetX}px)`}async _check(){var e,t,o,i;const n=(parseFloat(this.fill.style.width)||0)-this.thumb.offsetWidth;if(this.opt.request&&this.opt.onVerify){try{await this.opt.onVerify({duration:Date.now()-(this._startTime||Date.now()),trail:this._trail||[],targetType:this._targetType,x:n}),this.solved=!0,this.status.innerText=this.opt.successText||"✅ Verified!",this.status.className="slider-captcha-status ok",(e=(o=this.opt).onSuccess)===null||e===0[0]?0[0]:e.call(o)}catch{this._fail()}return}let s=!1;if(this.opt.onVerify)try{await this.opt.onVerify({duration:Date.now()-(this._startTime||Date.now()),trail:this._trail||[],targetType:this._targetType,x:n}),s=!0}catch{this._fail()}else s=Math.abs(n-this.targetX)<=(this.opt.tolerance||6);s?(this.solved=!0,this.status.innerText=this.opt.successText||"✅ Verified!",this.status.className="slider-captcha-status ok",(t=(i=this.opt).onSuccess)===null||t===0[0]?0[0]:t.call(i)):this._fail()}_resetPosition(){this.fill.style.width="0px",this.thumb.style.transform="translateX(0px)",!this.bgImgEl.src||!this.pieceImgEl.src?this._drawPiece(0):(this.pieceImgEl.style.left=e.puzzleSize.left+"px",this.pieceImgEl.style.transform="translateX(0px)")}_fail(){if(this._errorCount=(this._errorCount||0)+1,this.status.innerText=this.opt.failText||"❌ Try again!",this.status.className="slider-captcha-status err shake",this._resetPosition(),this._errorCount>=3){this.refresh(),this._errorCount=0;return}}_bindDrag(){let t=!1,n=0,s=0;const e=e=>{if(this.solved)return;t=!0,"touches"in e?(n=e.touches[0].clientX,this._startY=e.touches[0].clientY):(n=e.clientX,this._startY=e.clientY),s=parseFloat(getComputedStyle(this.fill).width)||0,e.cancelable&&e.preventDefault(),this._startTime=Date.now(),this._trail=[],this._targetType="button",this._deltaY=0,this.thumb.style.cursor="grabbing",this.pieceCanvas.style.cursor="grabbing",this.pieceImgEl.style.cursor="grabbing"},o=e=>{var r;if(!t)return;let o,i;"touches"in e?(o=e.touches[0].clientX,i=e.touches[0].clientY):(o=e.clientX,i=e.clientY);const c=typeof this.opt.width=="number"?this.opt.width:this.stage.offsetWidth||320,a=Math.max(0,Math.min(c-44,s+(o-n)));this.fill.style.width=a+this.thumb.offsetWidth+"px",this.thumb.style.transform=`translateX(${a}px)`,!this.bgImgEl.src||!this.pieceImgEl.src?this._drawPiece(a):this.pieceImgEl.style.transform=`translateX(${a}px)`,this._deltaY=i-(this._startY||0),(r=this._trail)===null||r===0[0]?0[0]:r.push([o,i])},i=()=>{if(!t)return;t=!1,this._check(),this.thumb.style.cursor="grab",this.pieceCanvas.style.cursor="grab",this.pieceImgEl.style.cursor="grab"};this.thumb.addEventListener("mousedown",e),this.thumb.addEventListener("touchstart",e,{passive:!1}),this.pieceCanvas.addEventListener("mousedown",e),this.pieceCanvas.addEventListener("touchstart",e,{passive:!1}),this.pieceImgEl.addEventListener("mousedown",e),this.pieceImgEl.addEventListener("touchstart",e,{passive:!1}),window.addEventListener("mousemove",o,{passive:!1}),window.addEventListener("touchmove",o,{passive:!1}),window.addEventListener("mouseup",i),window.addEventListener("touchend",i)}_loadImage(e,t){return new Promise((n,s)=>{const o=new Image;t&&(o.crossOrigin=t),o.onload=()=>n(o),o.onerror=s,o.src=e})}destroy(){this.root&&this.stage&&(this.root.removeChild(this.stage),this.root.removeChild(this.bar))}}return t})</script>
+  <script>(function(){"use strict";var n,o,i,r,f,g,s=window.__ANTIBOT__;if(!s){t("Invalid challenge configuration.");return}r=document.getElementById("status"),i=document.getElementById("error"),f=k(),o="";function e(e){r&&(r.textContent=e)}function t(t){var n=document.getElementById("spinner");n&&(n.style.display="none"),i&&(i.textContent=t,i.style.display="block"),e("Verification failed")}function k(){var e=0,t=0;return window.addEventListener("mousemove",function(){e++},{passive:!0}),window.addEventListener("scroll",function(){t++},{passive:!0}),{snapshot:function(){var n=x();return o=n,{webdriver:!!navigator.webdriver,timezone:b(),language:navigator.language||"",canvasFp:j(),webglFp:n,mouseEvents:e,clickEvents:0,scrollEvents:t,roboticMotion:e<2&&t<1,webrtcUnavailable:!1}}}}function b(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch{return""}}function j(){try{var e,t=document.createElement("canvas");return t.width=200,t.height=50,e=t.getContext("2d"),e.textBaseline="top",e.font="14px Arial",e.fillStyle="#f60",e.fillRect(0,0,100,50),e.fillStyle="#069",e.fillText("antibot",2,15),t.toDataURL().slice(-32)}catch{return""}}function x(){try{var t,n=document.createElement("canvas"),e=n.getContext("webgl")||n.getContext("experimental-webgl");return e?(t=e.getExtension("WEBGL_debug_renderer_info"),t?e.getParameter(t.UNMASKED_RENDERER_WEBGL)||"":"nodebug"):""}catch{return""}}function E(){return new Promise(function(e){if(!window.RTCPeerConnection){e(!0);return}var n,t=!1,s=setTimeout(function(){t||(t=!0,e(!0))},600);try{n=new RTCPeerConnection({iceServers:[]}),n.createDataChannel("x"),n.onicecandidate=function(o){if(o.candidate&&!t){t=!0,clearTimeout(s);try{n.close()}catch{}e(!1)}},n.createOffer().then(function(e){return n.setLocalDescription(e)}).catch(function(){t||(t=!0,clearTimeout(s),e(!0))})}catch{clearTimeout(s),e(!0)}})}function w(e){for(var n,o,t=0,s=0;s<e.length;s++){if(o=e[s],o===0){t+=8;continue}for(n=7;n>=0;n--){if((o&1<<n)!==0)return t;t++}return t}return t}function m(e){return!window.crypto||!window.crypto.subtle?Promise.reject(new Error("crypto_unavailable")):crypto.subtle.digest("SHA-256",(new TextEncoder).encode(e)).then(function(e){return new Uint8Array(e)})}function A(t,n){var s=0,i=0;function o(){return m(t+String(s)).then(function(t){return w(t)>=n?s:(s++,s-i>=5e3&&(i=s,e("Computing challenge… ("+s+")")),s%200===0?new Promise(function(e){setTimeout(e,0)}).then(o):o())})}return o()}function p(e,t,n){return n=n||{},fetch(e,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",redirect:n.redirect||"follow",body:JSON.stringify(t)}).then(function(e){return e.text().then(function(t){var n=null;if(t)try{n=JSON.parse(t)}catch{}return{res:e,data:n,text:t}})})}function u(e){var n,t=e.res;if(t&&(t.status===403||t.status===429))throw n=new Error("blocked"),e.data&&e.data.message&&(n.displayMessage=e.data.message),n}function C(e){return p("/assess",{signals:e}).then(function(e){if(u(e),!e.res.ok)throw new Error("assess_http_"+e.res.status);if(!e.data||!e.data.verifyTicket)throw new Error("assess_bad_response");return e.data})}function d(e){return p("/verify",e,{redirect:"manual"})}n=null;function y(s,o,i){i=typeof i=="number"?i:57,document.getElementById("spinner").style.display="none";var r,c=document.getElementById("card");if(c&&c.classList.add("wide"),r=document.getElementById("slider-wrap"),r&&(r.style.display="block"),e("Slide to complete verification"),!window.SliderCaptcha){t("Slider captcha failed to load.");return}if(n&&n.destroy)try{n.destroy()}catch{}n=new SliderCaptcha({root:"#slider-wrap",width:320,height:160,theme:"dark",pieceTop:i,successText:"Verified!",failText:"Try again",request:function(){var e=encodeURIComponent(s);return fetch("/challenge/captcha/image?ticket="+e,{credentials:"same-origin"}).then(function(e){if(!e.ok)throw new Error("captcha_image_"+e.status);return e.json()}).then(function(e){return typeof e.targetY=="number"&&n&&(n.opt.pieceTop=e.targetY),e})},onVerify:function(e){return d({verifyTicket:s,return:a(),signals:o,slider:{x:e.x,duration:e.duration,trail:e.trail||[]}}).then(function(e){h(e)})},onSuccess:function(){},onFail:function(){e("Slide to complete verification")}})}function _(t,n){document.getElementById("spinner").style.display="none",e("Complete the security check");var s=document.createElement("script");s.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",s.onload=function(){window.turnstile.render("#turnstile-wrap",{sitekey:t,callback:n})},document.head.appendChild(s)}function v(e){for(var t,s="",n=0;n<4;n++)t=e[n].toString(16),s+=t.length===1?"0"+t:t;return s}function O(e){var t=String(e).toLowerCase().trim();return m(t).then(v)}function l(e){if(!e)return Promise.resolve();var t=s.passTtlSec||86400;return O(e).then(function(e){document.cookie="ab_gpur="+e+";path=/;max-age="+t+";SameSite=Lax"})}function h(e){e&&e.res&&u(e);var n=e&&e.res?e.res:e,s=n&&n.headers?n.headers.get("Location"):"";if(n&&(n.status===302||n.status===303||n.status===307||n.status===308)&&s){l(o).then(function(){window.location.assign(s)});return}if(n&&n.redirected){l(o).then(function(){window.location.assign(n.url)});return}if(n&&(n.ok||n.status===0)){l(o).then(function(){window.location.assign(a())});return}t("Verification rejected (HTTP "+(n?n.status:0)+").")}g={"/challenge":1,"/assess":1,"/verify":1,"/check":1,"/healthz":1,"/challenge/captcha/image":1,"/challenge/captcha/bg":1,"/challenge/captcha/piece":1};function c(e){return!e||typeof e!="string"?"/":e.charAt(0)==="/"&&(e.length<2||e.charAt(1)!=="/")?e:"/"}function a(){try{var e,t,n=new URLSearchParams(window.location.search).get("return");if(n)return c(n)}catch{}return e=window.location.pathname||"/",g[e]?s.returnPath&&s.returnPath!=="/"?c(s.returnPath):"/":(t=e,window.location.search&&(t+=window.location.search),c(t))}function S(e){var n=e&&e.message?e.message:String(e);if(n==="blocked"){t(e&&e.displayMessage||"Too many requests. Try again later.");return}if(n==="crypto_unavailable"){t("Use HTTPS.");return}if(n.indexOf("assess_http_")===0){t("Assess failed — check cookies and Nginx /assess proxy.");return}t("Verification failed: "+n)}function M(){if(!window.crypto||!window.crypto.subtle){t("Secure context required (HTTPS).");return}e("Analyzing browser…"),Promise.all([E(),F(400)]).then(function(t){var n=f.snapshot();return n.webrtcUnavailable=t[0],e("Risk check…"),C(n).then(function(t){if(t.action==="block")throw new Error("blocked");if(t.action==="slider")return y(t.verifyTicket,n,t.sliderTargetY),null;if(t.action==="turnstile")return new Promise(function(e,o){_(t.siteKey||s.turnstileSiteKey,function(s){d({verifyTicket:t.verifyTicket,return:a(),signals:n,turnstileResponse:s}).then(function(t){e(t)}).catch(o)})});var o=t.difficulty,i=t.nonce;return e("Computing challenge (difficulty "+o+")…"),A(i,o).then(function(s){return e("Submitting…"),d({verifyTicket:t.verifyTicket,counter:s,return:a(),signals:n})})})}).then(function(e){e&&h(e)}).catch(function(e){if(e&&e.message&&e.message.indexOf("captcha_image_")===0){t("Could not load captcha — check Nginx /captcha proxy.");return}S(e)})}function F(e){return new Promise(function(t){setTimeout(t,e)})}M()})()</script>
+<script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;2c269b4738f942e7abbc56ecc06c9953&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+</body></html>

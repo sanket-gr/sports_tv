@@ -12,16 +12,7 @@ from main import app
 # Create tables for tests
 create_tables()
 
-def test_read_admin():
-    # If no credentials are set in environment, /admin should be accessible
-    if "ADMIN_USERNAME" in os.environ:
-        del os.environ["ADMIN_USERNAME"]
-    if "ADMIN_PASSWORD" in os.environ:
-        del os.environ["ADMIN_PASSWORD"]
-        
-    with TestClient(app) as client:
-        response = client.get("/admin")
-        assert response.status_code == 200
+
 
 def test_admin_auth():
     # Enable authentication
@@ -99,19 +90,20 @@ def test_bulk_delete():
         assert len(categories) > 0
         cat_id = categories[0]["id"]
         
+        auth = ("admin", "sanket@123")
         # 2. Add two manual streams
         resp1 = client.post("/admin/streams", data={
             "category_id": cat_id,
             "title": "Stream to delete 1",
             "hls_url": "https://example.com/stream1.m3u8"
-        }, follow_redirects=False)
+        }, auth=auth, follow_redirects=False)
         assert resp1.status_code == 303
         
         resp2 = client.post("/admin/streams", data={
             "category_id": cat_id,
             "title": "Stream to delete 2",
             "hls_url": "https://example.com/stream2.m3u8"
-        }, follow_redirects=False)
+        }, auth=auth, follow_redirects=False)
         assert resp2.status_code == 303
         
         # Get active streams to find their IDs
@@ -128,7 +120,7 @@ def test_bulk_delete():
         # 3. Call bulk delete
         resp_delete = client.post("/admin/streams/bulk-delete", data={
             "stream_ids": [str(id1), str(id2)]
-        }, follow_redirects=False)
+        }, auth=auth, follow_redirects=False)
         assert resp_delete.status_code == 303
         
         # 4. Verify they are deleted
@@ -178,6 +170,42 @@ async def test_cdnlivetv_scraper():
         res = await scraper.extract("https://cdnlivetv.tv/api/v1/channels/player/?name=TSN%201")
         assert res["hls_url"].startswith("https://cdnlivetv.tv/secure/api/v1/6a288d2a81d8192bb76cc172/playlist.m3u8?token=NmEy")
         assert res["title"] == "TSN 1 CA"
+
+
+def test_sportsrc_proxy_routes():
+    with TestClient(app) as client:
+        # Test matches endpoint
+        response = client.get("/api/sportsrc/matches")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert data[0]["id"] == "arsenal-vs-chelsea-101"
+
+        # Test detail endpoint
+        response = client.get("/api/sportsrc/detail/arsenal-vs-chelsea-101")
+        assert response.status_code == 200
+        assert response.json()["venue"] == "Emirates Stadium"
+
+        # Test lineups endpoint
+        response = client.get("/api/sportsrc/lineups/arsenal-vs-chelsea-101")
+        assert response.status_code == 200
+        assert "home" in response.json()
+
+        # Test stats endpoint
+        response = client.get("/api/sportsrc/stats/arsenal-vs-chelsea-101")
+        assert response.status_code == 200
+        assert response.json()["possession"]["home"] == "55%"
+
+        # Test incidents endpoint
+        response = client.get("/api/sportsrc/incidents/arsenal-vs-chelsea-101")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+        # Test odds endpoint
+        response = client.get("/api/sportsrc/odds/arsenal-vs-chelsea-101")
+        assert response.status_code == 200
+        assert "decimal" in response.json()
+
 
 
 

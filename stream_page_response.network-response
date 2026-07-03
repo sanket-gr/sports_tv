@@ -1,0 +1,10 @@
+
+<script>
+    ConsoleBan.init({
+      redirect: "https://jokertvguide.sx"
+    })
+</script>
+
+<div style="display:none;"><img id="vw24" src="//whos.amung.us/cwidget/jokernew/000000ffffff.png"></div>
+<script>var vw24 = document.getElementById("vw24");setInterval(function(){vw24.src="//whos.amung.us/cwidget/jokernew/000000ffffff.png?"+new Date().getTime()},300000);</script>
+redirect

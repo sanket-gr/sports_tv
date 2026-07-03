@@ -65,15 +65,23 @@ class MainActivity : AppCompatActivity() {
 
         // Setup bottom navigation selection listener
         binding.navView.setOnItemSelectedListener { item ->
-            currentTabId = item.itemId
             when (item.itemId) {
                 R.id.navigation_home -> {
+                    currentTabId = item.itemId
                     showHomeView()
                     true
                 }
                 R.id.navigation_favorites -> {
+                    currentTabId = item.itemId
                     showFavoritesView()
                     true
+                }
+                R.id.navigation_update -> {
+                    lifecycleScope.launch {
+                        android.widget.Toast.makeText(this@MainActivity, "Checking for updates...", android.widget.Toast.LENGTH_SHORT).show()
+                        UpdateChecker.checkForUpdate(this@MainActivity, showToastIfLatest = true)
+                    }
+                    false // Don't highlight/switch to this tab
                 }
                 else -> false
             }
@@ -81,6 +89,11 @@ class MainActivity : AppCompatActivity() {
 
         // Handle deep link if app is launched via URI
         handleIntent(intent)
+
+        // Check for updates automatically on startup
+        lifecycleScope.launch {
+            UpdateChecker.checkForUpdate(this@MainActivity)
+        }
     }
 
     private fun fetchStreams() {

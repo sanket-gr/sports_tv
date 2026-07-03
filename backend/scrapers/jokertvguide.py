@@ -3,8 +3,9 @@ import json
 import logging
 import asyncio
 from bs4 import BeautifulSoup
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from .base import BaseScraper
+from .flaresolverr_client import playwright_cookies, try_get_cf_clearance
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +17,53 @@ USER_AGENT = (
 REFERER = "https://partner.nonamejose.sx/"
 
 class JokerTvGuideScraper(BaseScraper):
-    async def _fetch_with_browser(self, url: str, browser: Any) -> str:
+    async def _get_cf_cookies(
+        self, url: str
+    ) -> Tuple[Optional[List[dict]], Optional[str], Optional[str]]:
+        """
+        Try to get Cloudflare clearance cookies from FlareSolverr.
+        Returns (pw_cookies, user_agent, pre_fetched_html) or (None, None, None).
+        """
+        result = await try_get_cf_clearance(url)
+        if result is None:
+            return None, None, None
+        raw_cookies, user_agent, html = result
+        pw_cookies = playwright_cookies(raw_cookies)
+        logger.info(
+            f"[JokerTvGuide] FlareSolverr gave {len(pw_cookies)} cookie(s) for {url}"
+        )
+        return pw_cookies, user_agent or USER_AGENT, html
+
+    async def _fetch_with_browser(
+        self,
+        url: str,
+        browser: Any,
+        cf_cookies: Optional[List[dict]] = None,
+        cf_ua: Optional[str] = None,
+    ) -> str:
         from playwright.async_api import TimeoutError as PWTimeout
         from .base import create_stealth_context
 
-        ctx = await create_stealth_context(browser, USER_AGENT, REFERER)
+        effective_ua = cf_ua or USER_AGENT
+        ctx = await create_stealth_context(browser, effective_ua, REFERER)
+
+        # Pre-seed Cloudflare clearance cookies so the challenge is skipped
+        if cf_cookies:
+            try:
+                await ctx.add_cookies(cf_cookies)
+                logger.debug(f"[JokerTvGuide] Injected {len(cf_cookies)} CF cookie(s)")
+            except Exception as e:
+                logger.warning(f"[JokerTvGuide] Failed to inject CF cookies: {e}")
+
         page = await ctx.new_page()
-        await page.route(
-            "**cdn.jsdelivr.net/npm/disable-devtool**",
-            lambda route, _: asyncio.create_task(route.abort()),
-        )
+
+        # Block bot-detection scripts before they load
+        async def _block_route(route, request):
+            await route.abort()
+        await page.route("**/cdn.jsdelivr.net/npm/disable-devtool**", _block_route)
+        await page.route("**/whos.amung.us/**", _block_route)
+        await page.route("**consoleban**", _block_route)
+
         try:
             await page.goto(url, wait_until="networkidle", timeout=30_000)
         except PWTimeout:
@@ -33,8 +71,8 @@ class JokerTvGuideScraper(BaseScraper):
                 await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
             except Exception:
                 pass
-        
-        # Wait up to 15 seconds for __NEXT_DATA__ to appear (meaning Cloudflare resolved)
+
+        # Wait up to 15 seconds for __NEXT_DATA__ to appear (Cloudflare resolved)
         try:
             await page.wait_for_selector("script#__NEXT_DATA__", timeout=15_000)
         except Exception:
@@ -93,8 +131,15 @@ class JokerTvGuideScraper(BaseScraper):
 
         return result
 
-    async def _fetch_hls(self, iframe_url: str, browser: Any) -> str:
+    async def _fetch_hls(
+        self,
+        iframe_url: str,
+        browser: Any,
+        cf_cookies: Optional[List[dict]] = None,
+        cf_ua: Optional[str] = None,
+    ) -> str:
         from playwright.async_api import TimeoutError as PWTimeout
+        from .base import create_stealth_context
 
         captured: list = []
 
@@ -103,9 +148,16 @@ class JokerTvGuideScraper(BaseScraper):
             if ".m3u8" in url:
                 captured.append(url)
 
-        from .base import create_stealth_context
+        effective_ua = cf_ua or USER_AGENT
+        ctx = await create_stealth_context(browser, effective_ua, REFERER)
 
-        ctx = await create_stealth_context(browser, USER_AGENT, REFERER)
+        # Re-use the same CF cookies in the embed player context
+        if cf_cookies:
+            try:
+                await ctx.add_cookies(cf_cookies)
+            except Exception as e:
+                logger.warning(f"[JokerTvGuide] _fetch_hls cookie inject failed: {e}")
+
         page = await ctx.new_page()
         page.on("request", _on_request)
         try:
@@ -122,7 +174,7 @@ class JokerTvGuideScraper(BaseScraper):
         m = re.search(r'file\s*[:=]\s*["\'](?P<url>https?://[^"\']+\.m3u8[^"\']*)["\']', html)
         if m:
             return m.group("url")
-        m2 = re.search(r'(?P<url>https?://[^"\'>\s]+\.m3u8[^"\'>\s]*)', html)
+        m2 = re.search(r'(?P<url>https?://[^"\'<>\s]+\.m3u8[^"\'<>\s]*)', html)
         if m2:
             return m2.group("url")
 
@@ -131,10 +183,10 @@ class JokerTvGuideScraper(BaseScraper):
     async def extract(self, url: str, browser: Any = None) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         import asyncio
         from playwright.async_api import async_playwright
-        
+
         local_playwright = None
         current_browser = browser
-        
+
         if not current_browser:
             import os
             from .base import parse_playwright_proxy
@@ -144,11 +196,24 @@ class JokerTvGuideScraper(BaseScraper):
             if scraper_proxy:
                 launch_kwargs["proxy"] = parse_playwright_proxy(scraper_proxy)
             current_browser = await local_playwright.chromium.launch(**launch_kwargs)
-            
+
         try:
             result: Dict[str, Any] = {"source_url": url, "iframe_url": "", "hls_url": ""}
 
-            html = await self._fetch_with_browser(url, current_browser)
+            # ── Step 1: Try FlareSolverr to get Cloudflare clearance cookies ──
+            cf_cookies, cf_ua, pre_html = await self._get_cf_cookies(url)
+
+            # ── Step 2: Fetch the stream page (cookies pre-seeded if available) ──
+            # If FlareSolverr already returned the HTML, we can use it directly
+            # and skip an extra Playwright navigation when __NEXT_DATA__ is present.
+            if pre_html and "__NEXT_DATA__" in pre_html:
+                logger.info("[JokerTvGuide] Using FlareSolverr pre-fetched HTML")
+                html = pre_html
+            else:
+                html = await self._fetch_with_browser(
+                    url, current_browser, cf_cookies=cf_cookies, cf_ua=cf_ua
+                )
+
             meta = self._parse_next_data(html)
             result.update(meta)
 
@@ -173,8 +238,11 @@ class JokerTvGuideScraper(BaseScraper):
                 result["hls_url"] = ""
                 return result
 
+            # ── Step 3: Fetch HLS from the embed player (reuse CF cookies) ──
             try:
-                result["hls_url"] = await self._fetch_hls(iframe_url, current_browser)
+                result["hls_url"] = await self._fetch_hls(
+                    iframe_url, current_browser, cf_cookies=cf_cookies, cf_ua=cf_ua
+                )
                 if not result["hls_url"]:
                     current_title = result.get("title", "")
                     if not current_title.startswith("[ERROR]"):

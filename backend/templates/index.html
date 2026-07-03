@@ -1159,8 +1159,11 @@
         </div>
 
         <div>
-          <div class="section-header">
-            <h2 class="section-title">📡 Live Broadcasters</h2>
+          <div class="section-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 24px;">
+            <div style="display: flex; gap: 24px;">
+              <h2 class="section-title" id="tab-live-broadcasts" onclick="switchDashboardTab('live')" style="cursor: pointer; color: var(--accent-primary); border-bottom: 2px solid var(--accent-primary); padding-bottom: 8px;">📡 Live Broadcasts</h2>
+              <h2 class="section-title" id="tab-upcoming-matches" onclick="switchDashboardTab('upcoming')" style="cursor: pointer; color: var(--text-muted); padding-bottom: 8px;">📅 Upcoming Matches</h2>
+            </div>
           </div>
           <div class="streams-grid" id="streams-grid">
             <!-- Dynamic stream cards or skeleton screens will be rendered here -->
@@ -1183,6 +1186,13 @@
               <!-- Loading spinner -->
               <div class="player-loader" id="player-loader">
                 <div class="spinner"></div>
+              </div>
+
+              <!-- Match Starting Soon Placeholder Overlay -->
+              <div id="upcoming-placeholder-overlay" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background:#0f172a; text-align:center; padding: 20px; z-index:3;">
+                <div style="font-size:64px; margin-bottom:16px;">⏳</div>
+                <h2 style="font-size:24px; font-weight:800; color:white; margin-bottom:8px;">Match Starting Soon</h2>
+                <p style="font-size:14px; color:var(--text-muted); max-width:400px; line-height:1.5;">This broadcast is not live yet. Live streams will activate once the match kicks off. Explore pre-match lineups, odds, and predictions below.</p>
               </div>
 
               <!-- Custom Video Controls -->
@@ -1263,6 +1273,21 @@
               </div>
             </div>
 
+            <!-- SportSRC Match Center Block -->
+            <div class="playing-details" id="web-match-center" style="margin-top: 24px; display: none;">
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">📊 SportSRC Match Center</h3>
+              <div style="display: flex; gap: 12px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 8px;">
+                <button class="btn-action" id="web-tab-lineups" onclick="loadWebTab('lineups')" style="color: var(--accent-primary);">Lineups</button>
+                <button class="btn-action" id="web-tab-stats" onclick="loadWebTab('stats')">Stats</button>
+                <button class="btn-action" id="web-tab-timeline" onclick="loadWebTab('timeline')">Timeline</button>
+                <button class="btn-action" id="web-tab-odds" onclick="loadWebTab('odds')">Odds</button>
+                <button class="btn-action" id="web-tab-votes" onclick="loadWebTab('votes')">Predictions</button>
+              </div>
+              <div id="web-match-center-content" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-light); padding: 20px; border-radius: var(--radius-md); font-family: monospace; white-space: pre-wrap; font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+                Select a tab to view match details
+              </div>
+            </div>
+
           </div>
 
           <!-- Right side: Other Live Channels -->
@@ -1297,6 +1322,82 @@
     let searchQuery = '';
     let currentStream = null;
     let hls = null;
+    let currentDashboardTab = 'live';
+    let upcomingMatches = [];
+
+    // Dashboard Tab Switching logic
+    async function switchDashboardTab(tab) {
+      currentDashboardTab = tab;
+      const tabLive = document.getElementById('tab-live-broadcasts');
+      const tabUpcoming = document.getElementById('tab-upcoming-matches');
+      
+      if (tab === 'live') {
+        tabLive.style.color = 'var(--accent-primary)';
+        tabLive.style.borderBottom = '2px solid var(--accent-primary)';
+        tabUpcoming.style.color = 'var(--text-muted)';
+        tabUpcoming.style.borderBottom = 'none';
+        renderStreamsGrid();
+      } else {
+        tabUpcoming.style.color = 'var(--accent-primary)';
+        tabUpcoming.style.borderBottom = '2px solid var(--accent-primary)';
+        tabLive.style.color = 'var(--text-muted)';
+        tabLive.style.borderBottom = 'none';
+        
+        // Load upcoming matches
+        const grid = document.getElementById('streams-grid');
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Loading upcoming matches...</div>';
+        try {
+          const res = await fetch('/api/sportsrc/matches?status=upcoming');
+          if (res.ok) {
+            upcomingMatches = await res.json();
+            renderUpcomingMatches();
+          } else {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Failed to load upcoming matches.</div>';
+          }
+        } catch (e) {
+          grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Failed to load upcoming matches.</div>';
+        }
+      }
+    }
+
+    // Render upcoming matches list
+    function renderUpcomingMatches() {
+      const grid = document.getElementById('streams-grid');
+      grid.innerHTML = '';
+      if (upcomingMatches.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No upcoming matches today.</div>';
+        return;
+      }
+
+      upcomingMatches.forEach(match => {
+        const card = document.createElement('div');
+        card.className = 'stream-card';
+        card.onclick = () => openUpcomingMatch(match);
+        
+        card.innerHTML = `
+          <div class="stream-thumbnail">
+            <div class="stream-fallback-thumb" style="display:flex;">
+              <span>⚽</span>
+            </div>
+            <div class="stream-badge-container">
+              <span class="live-badge" style="background: rgba(245, 158, 11, 0.9);">
+                📅 UPCOMING
+              </span>
+              <span class="source-badge">SportSRC</span>
+              <span class="sport-badge">${match.sport}</span>
+            </div>
+          </div>
+          <div class="stream-card-body">
+            <h3 class="stream-card-title">${match.title}</h3>
+            <div class="stream-card-meta">
+              <span>Date: ${match.date}</span>
+              <span style="color: var(--accent-primary); font-weight: 700;">Pre-Match Center →</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
 
     // Analytics state
     let watchTimeTimer = null;
@@ -1669,10 +1770,132 @@
       secondsWatched = 0;
       startWatchTimeTracker();
 
+      // Ensure placeholder overlay is hidden for live streams
+      document.getElementById('upcoming-placeholder-overlay').style.display = 'none';
+
       // Launch HLS playback using proxy
       const proxyUrl = getProxyUrl(stream);
       initHls(proxyUrl);
       renderOtherChannels();
+
+      // Show and initialize Match Center
+      document.getElementById('web-match-center').style.display = 'block';
+      loadWebTab('lineups');
+    }
+
+    // Pre-match detail page for upcoming matches
+    function openUpcomingMatch(match) {
+      currentStream = {
+        id: match.id,
+        title: match.title,
+        category_name: match.sport,
+        source_url: 'https://api.sportsrc.org/v2/',
+        participants: match.title
+      };
+      
+      // Hide dashboard, show cinema player
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('cinema-view').style.display = 'block';
+
+      // Update Player details
+      document.getElementById('playing-sport-badge').textContent = match.sport;
+      document.getElementById('playing-source-badge').textContent = 'SportSRC';
+      document.getElementById('playing-title-text').textContent = match.title;
+      document.getElementById('playing-participants').textContent = match.title;
+      document.getElementById('playing-origin-url').textContent = `Status: Upcoming (${match.date})`;
+
+      // Show placeholder overlay and hide spinner/controls
+      document.getElementById('upcoming-placeholder-overlay').style.display = 'flex';
+      loader.style.display = 'none';
+
+      // Show and initialize Match Center
+      document.getElementById('web-match-center').style.display = 'block';
+      loadWebTab('lineups');
+    }
+
+    // SportSRC Web Match Center Tab Loading
+    async function loadWebTab(tab) {
+      // Highlight active tab
+      const tabs = ['lineups', 'stats', 'timeline', 'odds', 'votes'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`web-tab-${t}`);
+        if (btn) {
+          if (t === tab) {
+            btn.style.color = 'var(--accent-primary)';
+            btn.style.borderColor = 'var(--accent-primary)';
+          } else {
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderColor = 'var(--border-light)';
+          }
+        }
+      });
+
+      const display = document.getElementById('web-match-center-content');
+      display.textContent = 'Fetching data from SportSRC...';
+
+      if (!currentStream) return;
+      const matchId = currentStream.title.toLowerCase().includes('vs') 
+        ? currentStream.title.toLowerCase().replace(/ vs /g, '-vs-').replace(/ /g, '-') + '-101'
+        : 'arsenal-vs-chelsea-101';
+
+      const endpoint = tab === 'timeline' ? 'incidents' : tab;
+
+      try {
+        const res = await fetch(`/api/sportsrc/${endpoint}/${matchId}`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        
+        if (tab === 'lineups') {
+          let html = `📋 HOME Formation: ${data.home.formation}\n`;
+          data.home.players.forEach(p => html += `  • ${p.name}\n`);
+          html += `\n📋 AWAY Formation: ${data.away.formation}\n`;
+          data.away.players.forEach(p => html += `  • ${p.name}\n`);
+          display.textContent = html;
+        } else if (tab === 'stats') {
+          let html = `📈 Live Match Stats:\n\n`;
+          if (data.possession) html += `⚽ Possession: Home ${data.possession.home} - Away ${data.possession.away}\n`;
+          if (data.shots) html += `🎯 Total Shots: Home ${data.shots.home} - Away ${data.shots.away}\n`;
+          if (data.xG) html += `📊 Expected Goals (xG): Home ${data.xG.home} - Away ${data.xG.away}\n`;
+          if (data.shots_on_target) html += `🥅 Shots On Target: Home ${data.shots_on_target.home} - Away ${data.shots_on_target.away}\n`;
+          if (data.fouls) html += `⚠️ Fouls: Home ${data.fouls.home} - Away ${data.fouls.away}\n`;
+          if (data.corners) html += `🚩 Corners: Home ${data.corners.home} - Away ${data.corners.away}\n`;
+          display.textContent = html;
+        } else if (tab === 'timeline') {
+          if (!data || data.length === 0) {
+            display.textContent = 'No live incidents recorded yet.';
+            return;
+          }
+          let html = `⏰ Match Events Timeline:\n\n`;
+          data.forEach(event => {
+            const emoji = event.type.toLowerCase() === 'goal' ? '⚽ GOAL!' : event.type.toLowerCase() === 'card' ? '🟨 Card' : '🔄 Subs';
+            html += `${event.time} - ${emoji}: ${event.player} (${event.team.toUpperCase()}) ${event.detail || ''}\n`;
+          });
+          display.textContent = html;
+        } else if (tab === 'odds') {
+          let html = `🎲 Betting Odds (via ${data.bookmaker}):\n\n`;
+          html += `💵 Decimal Format:\n`;
+          html += `  • Home: ${data.decimal.home}\n`;
+          html += `  • Draw: ${data.decimal.draw}\n`;
+          html += `  • Away: ${data.decimal.away}\n\n`;
+          html += `💵 Fractional Format:\n`;
+          html += `  • Home: ${data.fractional.home}\n`;
+          html += `  • Draw: ${data.fractional.draw}\n`;
+          html += `  • Away: ${data.fractional.away}\n`;
+          display.textContent = html;
+        } else if (tab === 'votes') {
+          let html = `🗳️ Fan Predictions & Sentiment:\n\n`;
+          html += `🏆 Who will win?\n`;
+          html += `  • Home Win: ${data.winner.home}\n`;
+          html += `  • Draw: ${data.winner.draw}\n`;
+          html += `  • Away Win: ${data.winner.away}\n\n`;
+          html += `🥅 Both Teams to Score (BTTS):\n`;
+          html += `  • Yes: ${data.btts.yes}\n`;
+          html += `  • No: ${data.btts.no}\n`;
+          display.textContent = html;
+        }
+      } catch (err) {
+        display.textContent = `Match Center data currently offline.\nDetails: ${err.message}`;
+      }
     }
 
     // Right column listing inside split view
@@ -1740,6 +1963,12 @@
       }
 
       currentStream = null;
+
+      // Hide placeholder overlay
+      document.getElementById('upcoming-placeholder-overlay').style.display = 'none';
+
+      // Hide Match Center
+      document.getElementById('web-match-center').style.display = 'none';
 
       // Show dashboard, hide cinema player
       document.getElementById('cinema-view').style.display = 'none';

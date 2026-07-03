@@ -21,6 +21,11 @@ const val BASE_URL = "http://13.204.129.74/"
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 interface SportsApiService {
 
+    @GET("api/version")
+    suspend fun getVersion(
+        @Query("platform") platform: String = "mobile"
+    ): VersionInfo
+
     @GET("api/streams")
     suspend fun getStreams(
         @Query("live_only") liveOnly: Boolean = true,
@@ -42,6 +47,31 @@ interface SportsApiService {
     suspend fun recordWatchTime(
         @Body request: WatchTimeRequest
     ): WatchTimeResponse
+
+    @GET("api/sportsrc/lineups/{id}")
+    suspend fun getSportSrcLineups(
+        @Path("id") id: String,
+    ): MatchLineups
+
+    @GET("api/sportsrc/stats/{id}")
+    suspend fun getSportSrcStats(
+        @Path("id") id: String,
+    ): MatchStats
+
+    @GET("api/sportsrc/incidents/{id}")
+    suspend fun getSportSrcIncidents(
+        @Path("id") id: String,
+    ): List<IncidentItem>
+
+    @GET("api/sportsrc/odds/{id}")
+    suspend fun getSportSrcOdds(
+        @Path("id") id: String,
+    ): MatchOdds
+
+    @GET("api/sportsrc/votes/{id}")
+    suspend fun getSportSrcVotes(
+        @Path("id") id: String,
+    ): MatchVotes
 }
 
 // ─── Singleton client ─────────────────────────────────────────────────────────

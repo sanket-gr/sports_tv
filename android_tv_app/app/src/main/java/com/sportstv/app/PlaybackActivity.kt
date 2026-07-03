@@ -160,31 +160,16 @@ class PlaybackActivity : FragmentActivity() {
             }.start()
         }, 4000)
 
-        // ── SportSRC Match Center Sidebar setup ─────────────────────────────
+        // ── Server Selection Sidebar setup ──────────────────────────────────
         val sidebar = findViewById<View>(R.id.match_center_sidebar)
         val btnToggleStats = findViewById<Button>(R.id.btn_toggle_stats)
-        val btnTabLineups = findViewById<Button>(R.id.btn_tv_tab_lineups)
-        val btnTabStats = findViewById<Button>(R.id.btn_tv_tab_stats)
-        val btnTabTimeline = findViewById<Button>(R.id.btn_tv_tab_timeline)
-        val btnTabOdds = findViewById<Button>(R.id.btn_tv_tab_odds)
-        val btnTabServers = findViewById<Button>(R.id.btn_tv_tab_servers)
-        val tvContent = findViewById<TextView>(R.id.tv_tv_match_center_content)
 
-        val matchId = if (title.contains("vs", ignoreCase = true)) {
-            title.replace(" ", "-").lowercase() + "-101"
-        } else {
-            "arsenal-vs-chelsea-101"
-        }
-
+        btnToggleStats.text = "📡 Servers"
         btnToggleStats.setOnClickListener {
-            toggleSidebar(sidebar.visibility == View.GONE)
+            val isHidden = sidebar.visibility == View.GONE
+            toggleSidebar(isHidden)
+            if (isHidden) populateServersList()
         }
-
-        btnTabLineups.setOnClickListener { loadTabContent("lineups", matchId, tvContent) }
-        btnTabStats.setOnClickListener { loadTabContent("stats", matchId, tvContent) }
-        btnTabTimeline.setOnClickListener { loadTabContent("timeline", matchId, tvContent) }
-        btnTabOdds.setOnClickListener { loadTabContent("odds", matchId, tvContent) }
-        btnTabServers.setOnClickListener { loadTabContent("servers", matchId, tvContent) }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -365,6 +350,7 @@ class PlaybackActivity : FragmentActivity() {
                 val detail = withContext(Dispatchers.IO) {
                     ApiClient.service.getSportSrcDetail(matchId)
                 }
+                sportSrcMatchDetail = detail  // Save for server selection sidebar
                 val realHls = detail.hlsUrl ?: ""
                 if (realHls.isNotBlank()) {
                     iframeUrl = detail.streamUrl ?: ""
@@ -476,97 +462,17 @@ class PlaybackActivity : FragmentActivity() {
         val sidebar = findViewById<View>(R.id.match_center_sidebar)
         sidebar.visibility = if (show) View.VISIBLE else View.GONE
         if (show) {
-            findViewById<View>(R.id.btn_tv_tab_lineups).requestFocus()
-            val title = intent.getStringExtra("title") ?: ""
-            val matchId = if (title.contains("vs", ignoreCase = true)) {
-                title.replace(" ", "-").lowercase() + "-101"
-            } else {
-                "arsenal-vs-chelsea-101"
-            }
-            loadTabContent("lineups", matchId, findViewById(R.id.tv_tv_match_center_content))
-        }
-    }
-
-    private fun loadTabContent(tab: String, matchId: String, tvContent: TextView) {
-        if (tab == "servers") {
-            showServersTab(true)
             populateServersList()
-            return
-        }
-
-        showServersTab(false)
-        tvContent.text = "Loading stats..."
-        lifecycleScope.launch {
-            try {
-                when (tab) {
-                    "lineups" -> {
-                        val lineups = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcLineups(matchId) }
-                        val sb = StringBuilder()
-                        sb.append("📋 HOME Formation: ${lineups.home.formation}\n")
-                        lineups.home.players.forEach { sb.append("  • ${it.name}\n") }
-                        sb.append("\n📋 AWAY Formation: ${lineups.away.formation}\n")
-                        lineups.away.players.forEach { sb.append("  • ${it.name}\n") }
-                        tvContent.text = sb.toString()
-                    }
-                    "stats" -> {
-                        val stats = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcStats(matchId) }
-                        val sb = StringBuilder()
-                        sb.append("📈 Live Match Stats:\n\n")
-                        stats.possession?.let { sb.append("⚽ Possession: Home ${it.home} - Away ${it.away}\n") }
-                        stats.shots?.let { sb.append("🎯 Total Shots: Home ${it.home} - Away ${it.away}\n") }
-                        stats.xG?.let { sb.append("📊 Expected Goals (xG): Home ${it.home} - Away ${it.away}\n") }
-                        stats.shotsOnTarget?.let { sb.append("🥅 Shots On Target: Home ${it.home} - Away ${it.away}\n") }
-                        stats.fouls?.let { sb.append("⚠️ Fouls: Home ${it.home} - Away ${it.away}\n") }
-                        stats.corners?.let { sb.append("🚩 Corners: Home ${it.home} - Away ${it.away}\n") }
-                        tvContent.text = sb.toString()
-                    }
-                    "timeline" -> {
-                        val incidents = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcIncidents(matchId) }
-                        if (incidents.isEmpty()) {
-                            tvContent.text = "No live events recorded yet."
-                        } else {
-                            val sb = StringBuilder()
-                            sb.append("⏰ Match Events:\n\n")
-                            incidents.forEach {
-                                val emoji = when (it.type.lowercase()) {
-                                    "goal" -> "⚽ GOAL!"
-                                    "card" -> "🟨 Card"
-                                    "substitution" -> "🔄 Subs"
-                                    else -> "📢 Event"
-                                }
-                                sb.append("${it.time} - $emoji: ${it.player} (${it.team.uppercase()}) ${it.detail}\n")
-                            }
-                            tvContent.text = sb.toString()
-                        }
-                    }
-                    "odds" -> {
-                        val odds = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcOdds(matchId) }
-                        val sb = StringBuilder()
-                        sb.append("🎲 Betting Odds (via ${odds.bookmaker}):\n\n")
-                        sb.append("💵 Decimal Format:\n")
-                        sb.append("  • Home: ${odds.decimal.home}\n")
-                        sb.append("  • Draw: ${odds.decimal.draw}\n")
-                        sb.append("  • Away: ${odds.decimal.away}\n\n")
-                        sb.append("💵 Fractional Format:\n")
-                        sb.append("  • Home: ${odds.fractional.home}\n")
-                        sb.append("  • Draw: ${odds.fractional.draw}\n")
-                        sb.append("  • Away: ${odds.fractional.away}\n")
-                        tvContent.text = sb.toString()
-                    }
-                }
-            } catch (e: Exception) {
-                tvContent.text = "Stats currently unavailable for this event.\nDetails: ${e.localizedMessage}"
+            // Focus the first server button if available
+            val container = findViewById<LinearLayout>(R.id.layout_tv_server_list)
+            if (container.childCount > 0) {
+                container.getChildAt(0).requestFocus()
             }
         }
-    }
-
-    private fun showServersTab(show: Boolean) {
-        findViewById<View>(R.id.scroll_match_center_stats).visibility = if (show) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.scroll_match_center_servers).visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private fun populateServersList() {
-        val container = findViewById<LinearLayout>(R.id.layout_tv_match_center_servers)
+        val container = findViewById<LinearLayout>(R.id.layout_tv_server_list)
         container.removeAllViews()
 
         val detail = sportSrcMatchDetail
@@ -574,31 +480,32 @@ class PlaybackActivity : FragmentActivity() {
 
         if (streams.isNullOrEmpty()) {
             val tvMsg = TextView(this).apply {
-                text = "No additional stream servers available."
+                text = "No additional servers available for this stream."
                 setTextColor(0xFFE2E8F0.toInt())
                 textSize = 14f
-                setPadding(16, 16, 16, 16)
+                setPadding(16, 24, 16, 24)
             }
             container.addView(tvMsg)
             return
         }
 
-        streams.forEach { stream ->
+        streams.forEachIndexed { index, stream ->
             val btn = Button(this).apply {
-                val hdText = if (stream.hd) " (HD)" else ""
-                text = "${stream.language}$hdText"
-                textSize = 12f // Using standard text size
+                val hdText = if (stream.hd) " ★ HD" else ""
+                text = "Server ${index + 1}: ${stream.language}$hdText"
+                textSize = 13f
                 setTextColor(0xFFFFFFFF.toInt())
-                backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF1E293B.toInt())
+                val bgColor = if (stream.hd) 0xFF0F766E.toInt() else 0xFF1E293B.toInt()
+                backgroundTintList = android.content.res.ColorStateList.valueOf(bgColor)
                 focusable = View.FOCUSABLE
                 isClickable = true
+                setPadding(24, 20, 24, 20)
 
-                setPadding(16, 16, 16, 16)
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                lp.setMargins(0, 4, 0, 4)
+                lp.setMargins(0, 6, 0, 6)
                 this.layoutParams = lp
 
                 setOnClickListener {

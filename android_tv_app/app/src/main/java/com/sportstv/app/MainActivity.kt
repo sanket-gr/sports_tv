@@ -25,6 +25,10 @@ class MainActivity : FragmentActivity() {
         }
 
         handleIntent(intent)
+
+        lifecycleScope.launch {
+            UpdateChecker.checkForUpdate(this@MainActivity)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

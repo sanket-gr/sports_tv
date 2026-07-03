@@ -8,4 +8,8 @@
         android:id="@+id/navigation_favorites"
         android:icon="@android:drawable/btn_star_big_on"
         android:title="@string/nav_favorites" />
+    <item
+        android:id="@+id/navigation_update"
+        android:icon="@android:drawable/stat_sys_download"
+        android:title="Update" />
 </menu>

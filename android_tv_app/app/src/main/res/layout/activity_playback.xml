@@ -217,123 +217,34 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📊 Match Center"
+            android:text="📡 Stream Servers"
             android:textColor="#F3F4F6"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
-        <!-- Horizontal buttons for tabs -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_servers_hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:text="Select a server to switch quality"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp" />
 
-            <Button
-                android:id="@+id/btn_tv_tab_lineups"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Lineups"
-                android:textSize="10sp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#1E293B"
-                android:focusable="true" />
-
-            <Button
-                android:id="@+id/btn_tv_tab_stats"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Stats"
-                android:textSize="10sp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#1E293B"
-                android:focusable="true" />
-
-            <Button
-                android:id="@+id/btn_tv_tab_timeline"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Events"
-                android:textSize="10sp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#1E293B"
-                android:focusable="true" />
-
-            <Button
-                android:id="@+id/btn_tv_tab_odds"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Odds"
-                android:textSize="10sp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#1E293B"
-                android:focusable="true" />
-
-            <Button
-                android:id="@+id/btn_tv_tab_servers"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1.2"
-                android:text="Servers"
-                android:textSize="10sp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#1E293B"
-                android:focusable="true" />
-
-        </LinearLayout>
-
-        <FrameLayout
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#1E293B">
+            android:padding="4dp">
 
-            <!-- Stats/Lineups scroll view -->
-            <ScrollView
-                android:id="@+id/scroll_match_center_stats"
+            <LinearLayout
+                android:id="@+id/layout_tv_server_list"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="12dp"
-                android:visibility="visible">
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
-                <TextView
-                    android:id="@+id/tv_tv_match_center_content"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="#E2E8F0"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.2"
-                    android:text="Select a tab to view stats." />
-
-            </ScrollView>
-
-            <!-- Servers scroll view -->
-            <ScrollView
-                android:id="@+id/scroll_match_center_servers"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="12dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:id="@+id/layout_tv_match_center_servers"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-            </ScrollView>
-
-        </FrameLayout>
+        </ScrollView>
     </LinearLayout>
 
 </FrameLayout>

@@ -53,4 +53,11 @@ async def create_stealth_context(browser: Any, user_agent: str, referer: str = N
     )
     # Hide webdriver flag
     await ctx.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    # Neutralize ConsoleBan (used by jokertvguide/partner.nonamejose.sx) before it runs
+    await ctx.add_init_script("""
+        window.ConsoleBan = { init: function() {} };
+        // Also stub DisableDevtool in case disable-devtool loads
+        window.DisableDevtool = function() {};
+        window.DisableDevtool.launch = function() {};
+    """)
     return ctx

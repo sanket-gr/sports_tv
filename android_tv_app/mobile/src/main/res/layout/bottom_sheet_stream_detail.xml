@@ -1,128 +1,238 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="24dp"
+    android:fillViewport="true"
     android:background="@drawable/bg_glass_gradient">
 
-    <!-- Small drag bar indicator at the top for premium sheet UX -->
-    <View
-        android:id="@+id/drag_handle"
-        android:layout_width="40dp"
-        android:layout_height="4dp"
-        android:background="@color/glass_text_secondary"
-        android:layout_gravity="center_horizontal"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Stream/Match Preview Thumbnail -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cv_detail_thumbnail"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:layout_constraintTop_toBottomOf="@id/drag_handle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-        
-        <ImageView
-            android:id="@+id/iv_detail_thumbnail"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <!-- Small drag bar indicator at the top for premium sheet UX -->
+        <View
+            android:id="@+id/drag_handle"
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:background="@color/glass_text_secondary"
+            android:layout_gravity="center_horizontal"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Stream/Match Preview Thumbnail -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_detail_thumbnail"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:background="#1E293B"
-            android:contentDescription="Match Preview" />
-    </androidx.cardview.widget.CardView>
+            android:layout_height="180dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/drag_handle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            
+            <ImageView
+                android:id="@+id/iv_detail_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="#1E293B"
+                android:contentDescription="Match Preview" />
+        </androidx.cardview.widget.CardView>
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/tv_detail_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textColor="@color/glass_text_primary"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:text="Match Title Placeholder"
-        app:layout_constraintTop_toBottomOf="@id/cv_detail_thumbnail"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Category Tag -->
-    <TextView
-        android:id="@+id/tv_detail_category"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/glass_text_secondary"
-        android:textSize="14sp"
-        android:text="Sport Category"
-        app:layout_constraintTop_toBottomOf="@id/tv_detail_title"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- Live Status Badge -->
-    <TextView
-        android:id="@+id/tv_detail_live_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:text="● LIVE"
-        android:textColor="@color/neon_green"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="@id/tv_detail_category"
-        app:layout_constraintBottom_toBottomOf="@id/tv_detail_category"
-        app:layout_constraintStart_toEndOf="@id/tv_detail_category" />
-
-    <!-- Actions Layout Container -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@id/tv_detail_category"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Favorite Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_detail_favorite"
-            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Add Favorite"
-            android:textColor="@color/glass_text_secondary"
-            app:icon="@drawable/ic_star_border"
-            app:iconTint="@color/glass_text_secondary"
-            android:textSize="14sp"
-            android:textAllCaps="false" />
-
-        <!-- Watch Live Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_detail_watch"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1.2"
-            android:layout_marginStart="8dp"
-            android:text="Watch Live"
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tv_detail_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:textColor="@color/glass_text_primary"
-            android:backgroundTint="@color/neon_blue"
-            app:icon="@drawable/ic_play"
-            app:iconTint="@color/glass_text_primary"
-            android:textSize="15sp"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:textAllCaps="false"
-            app:cornerRadius="16dp" />
+            android:text="Match Title Placeholder"
+            app:layout_constraintTop_toBottomOf="@id/cv_detail_thumbnail"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    </LinearLayout>
+        <!-- Category Tag -->
+        <TextView
+            android:id="@+id/tv_detail_category"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/glass_text_secondary"
+            android:textSize="14sp"
+            android:text="Sport Category"
+            app:layout_constraintTop_toBottomOf="@id/tv_detail_title"
+            app:layout_constraintStart_toStartOf="parent" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Live Status Badge -->
+        <TextView
+            android:id="@+id/tv_detail_live_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="● LIVE"
+            android:textColor="@color/neon_green"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/tv_detail_category"
+            app:layout_constraintBottom_toBottomOf="@id/tv_detail_category"
+            app:layout_constraintStart_toEndOf="@id/tv_detail_category" />
+
+        <!-- Actions Layout Container -->
+        <LinearLayout
+            android:id="@+id/layout_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            app:layout_constraintTop_toBottomOf="@id/tv_detail_category"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Favorite Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_detail_favorite"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Add Favorite"
+                android:textColor="@color/glass_text_secondary"
+                app:icon="@drawable/ic_star_border"
+                app:iconTint="@color/glass_text_secondary"
+                android:textSize="14sp"
+                android:textAllCaps="false" />
+
+            <!-- Watch Live Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_detail_watch"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1.2"
+                android:layout_marginStart="8dp"
+                android:text="Watch Live"
+                android:textColor="@color/glass_text_primary"
+                android:backgroundTint="@color/neon_blue"
+                app:icon="@drawable/ic_play"
+                app:iconTint="@color/glass_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:cornerRadius="16dp" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:id="@+id/divider_match_center"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="20dp"
+            android:background="#334155"
+            app:layout_constraintTop_toBottomOf="@id/layout_actions" />
+
+        <!-- Match Center Title -->
+        <TextView
+            android:id="@+id/tv_match_center_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="📊 SportSRC Match Center"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/divider_match_center"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Horizontal Tab Selector -->
+        <HorizontalScrollView
+            android:id="@+id/hsv_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none"
+            app:layout_constraintTop_toBottomOf="@id/tv_match_center_title">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_lineups"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lineups"
+                    android:textColor="@color/neon_blue"
+                    android:textAllCaps="false"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_stats"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Stats"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textAllCaps="false"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_timeline"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Timeline"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textAllCaps="false"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_odds"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Odds"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textAllCaps="false"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_votes"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Predictions"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textAllCaps="false"/>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Match Center Content Box -->
+        <FrameLayout
+            android:id="@+id/fl_match_center_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:background="#1E293B"
+            app:layout_constraintTop_toBottomOf="@id/hsv_tabs"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <TextView
+                android:id="@+id/tv_match_center_display"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/glass_text_secondary"
+                android:textSize="14sp"
+                android:text="Select a tab to view match details" />
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

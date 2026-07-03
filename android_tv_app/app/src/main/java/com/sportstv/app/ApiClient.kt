@@ -46,30 +46,6 @@ interface SportsApiService {
         @Path("id") id: Int,
     ): StreamItem
 
-    @GET("api/sportsrc/lineups/{id}")
-    suspend fun getSportSrcLineups(
-        @Path("id") id: String,
-    ): MatchLineups
-
-    @GET("api/sportsrc/stats/{id}")
-    suspend fun getSportSrcStats(
-        @Path("id") id: String,
-    ): MatchStats
-
-    @GET("api/sportsrc/incidents/{id}")
-    suspend fun getSportSrcIncidents(
-        @Path("id") id: String,
-    ): List<IncidentItem>
-
-    @GET("api/sportsrc/odds/{id}")
-    suspend fun getSportSrcOdds(
-        @Path("id") id: String,
-    ): MatchOdds
-
-    @GET("api/sportsrc/votes/{id}")
-    suspend fun getSportSrcVotes(
-        @Path("id") id: String,
-    ): MatchVotes
 
     @GET("api/sportsrc/matches")
     suspend fun getSportSrcMatches(
