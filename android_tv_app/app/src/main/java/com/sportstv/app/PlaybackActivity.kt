@@ -15,6 +15,8 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.LinearLayout
+import android.view.ViewGroup
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -73,6 +75,7 @@ class PlaybackActivity : FragmentActivity() {
     private var originalUrl: String = ""
     private var iframeUrl: String = ""
     private var cfDomain: String = ""
+    private var sportSrcMatchDetail: SportSrcMatchDetail? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -164,6 +167,7 @@ class PlaybackActivity : FragmentActivity() {
         val btnTabStats = findViewById<Button>(R.id.btn_tv_tab_stats)
         val btnTabTimeline = findViewById<Button>(R.id.btn_tv_tab_timeline)
         val btnTabOdds = findViewById<Button>(R.id.btn_tv_tab_odds)
+        val btnTabServers = findViewById<Button>(R.id.btn_tv_tab_servers)
         val tvContent = findViewById<TextView>(R.id.tv_tv_match_center_content)
 
         val matchId = if (title.contains("vs", ignoreCase = true)) {
@@ -180,6 +184,7 @@ class PlaybackActivity : FragmentActivity() {
         btnTabStats.setOnClickListener { loadTabContent("stats", matchId, tvContent) }
         btnTabTimeline.setOnClickListener { loadTabContent("timeline", matchId, tvContent) }
         btnTabOdds.setOnClickListener { loadTabContent("odds", matchId, tvContent) }
+        btnTabServers.setOnClickListener { loadTabContent("servers", matchId, tvContent) }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -483,6 +488,13 @@ class PlaybackActivity : FragmentActivity() {
     }
 
     private fun loadTabContent(tab: String, matchId: String, tvContent: TextView) {
+        if (tab == "servers") {
+            showServersTab(true)
+            populateServersList()
+            return
+        }
+
+        showServersTab(false)
         tvContent.text = "Loading stats..."
         lifecycleScope.launch {
             try {
@@ -544,6 +556,90 @@ class PlaybackActivity : FragmentActivity() {
                 }
             } catch (e: Exception) {
                 tvContent.text = "Stats currently unavailable for this event.\nDetails: ${e.localizedMessage}"
+            }
+        }
+    }
+
+    private fun showServersTab(show: Boolean) {
+        findViewById<View>(R.id.scroll_match_center_stats).visibility = if (show) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.scroll_match_center_servers).visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun populateServersList() {
+        val container = findViewById<LinearLayout>(R.id.layout_tv_match_center_servers)
+        container.removeAllViews()
+
+        val detail = sportSrcMatchDetail
+        val streams = detail?.streams
+
+        if (streams.isNullOrEmpty()) {
+            val tvMsg = TextView(this).apply {
+                text = "No additional stream servers available."
+                setTextColor(0xFFE2E8F0.toInt())
+                textSize = 14f
+                setPadding(16, 16, 16, 16)
+            }
+            container.addView(tvMsg)
+            return
+        }
+
+        streams.forEach { stream ->
+            val btn = Button(this).apply {
+                val hdText = if (stream.hd) " (HD)" else ""
+                text = "${stream.language}$hdText"
+                textSize = 12f // Using standard text size
+                setTextColor(0xFFFFFFFF.toInt())
+                backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF1E293B.toInt())
+                focusable = View.FOCUSABLE
+                isClickable = true
+
+                setPadding(16, 16, 16, 16)
+                val lp = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                lp.setMargins(0, 4, 0, 4)
+                this.layoutParams = lp
+
+                setOnClickListener {
+                    toggleSidebar(false)
+                    playSelectedServer(stream)
+                }
+            }
+            container.addView(btn)
+        }
+    }
+
+    private fun playSelectedServer(stream: SportSrcStream) {
+        showLoading(true)
+        showError(false)
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.service.resolveStream(stream.embedUrl)
+                }
+                val realHls = response.hlsUrl ?: ""
+                if (realHls.isNotBlank()) {
+                    iframeUrl = stream.embedUrl
+                    cfDomain = try { Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
+
+                    val proxiedUrl = if (realHls.startsWith("http")) {
+                        val encodedHls = Uri.encode(realHls)
+                        val encodedReferer = Uri.encode(iframeUrl)
+                        "${BASE_URL}api/proxy?url=$encodedHls&referer=$encodedReferer"
+                    } else {
+                        realHls
+                    }
+
+                    hlsUrl = proxiedUrl
+                    initPlayer(proxiedUrl)
+                } else {
+                    showLoading(false)
+                    showError(true, "Failed to resolve stream link for this server.")
+                }
+            } catch (e: Exception) {
+                showLoading(false)
+                showError(true, "Error resolving server stream.\n${e.localizedMessage}")
             }
         }
     }

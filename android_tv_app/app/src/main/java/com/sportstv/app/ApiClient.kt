@@ -9,6 +9,7 @@ import retrofit2.http.Path
 import com.sportstv.app.model.*
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
+import com.google.gson.annotations.SerializedName
 
 // ─── Backend URL configuration ───────────────────────────────────────────────
 // IMPORTANT: Change this to your PC's local IP when testing on a real TV device.
@@ -80,7 +81,16 @@ interface SportsApiService {
     suspend fun getSportSrcDetail(
         @Path("id") id: String,
     ): SportSrcMatchDetail
+
+    @GET("api/sportsrc/resolve")
+    suspend fun resolveStream(
+        @Query("embed_url") embedUrl: String
+    ): ResolveResponse
 }
+
+data class ResolveResponse(
+    @SerializedName("hls_url") val hlsUrl: String?
+)
 
 // ─── Singleton client ─────────────────────────────────────────────────────────
 object ApiClient {

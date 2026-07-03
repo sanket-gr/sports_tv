@@ -48,40 +48,52 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
                 
                 sources = match_data.get("sources", [])
                 if not sources:
-                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": "", "streams": []}
                 
-                # Use the first available source
-                source = sources[0]
-                source_name = source.get("source")
-                source_id = source.get("id")
+                # Fetch streams from all sources concurrently
+                async def fetch_source_streams(src):
+                    s_name = src.get("source")
+                    s_id = src.get("id")
+                    try:
+                        async with httpx.AsyncClient(timeout=10.0, verify=False) as client_s:
+                            s_resp = await client_s.get(f"{BASE_URL}api/stream/{s_name}/{s_id}")
+                            if s_resp.status_code == 200:
+                                return s_name, s_resp.json()
+                    except Exception as ex:
+                        logger.warning(f"Error fetching streams for source {s_name}: {ex}")
+                    return s_name, []
+
+                tasks = [fetch_source_streams(src) for src in sources]
+                results = await asyncio.gather(*tasks)
+
+                all_streams = []
+                for s_name, streams in results:
+                    for stream in streams:
+                        all_streams.append({
+                            "streamNo": stream.get("streamNo", 1),
+                            "language": f"{s_name.upper()} - {stream.get('language', 'English')}",
+                            "hd": stream.get("hd", False),
+                            "embedUrl": stream.get("embedUrl", ""),
+                            "source": s_name
+                        })
+
+                if not all_streams:
+                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": "", "streams": []}
                 
-                # 2. Get the stream player URL
-                stream_resp = await client.get(f"{BASE_URL}api/stream/{source_name}/{source_id}")
-                if stream_resp.status_code != 200:
-                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
-                
-                streams = stream_resp.json()
-                if not streams:
-                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
-                
-                # Pick the first stream (prefer English/HD if possible, or just the first)
-                stream = streams[0]
-                embed_url = stream.get("embedUrl", "")
-                if not embed_url:
-                    return {"id": match_id, "title": match_data.get("title", ""), "hls_url": ""}
-                
-                # 3. Use Playwright to resolve the embedUrl to a direct HLS link
-                hls_url = await extract_hls_from_embed(embed_url)
+                # Pick the first stream as default to resolve
+                default_embed = all_streams[0]["embedUrl"]
+                hls_url = await extract_hls_from_embed(default_embed)
                 
                 return {
                     "id": match_id,
                     "title": match_data.get("title", ""),
-                    "stream_url": embed_url,
-                    "hls_url": hls_url
+                    "stream_url": default_embed,
+                    "hls_url": hls_url,
+                    "streams": all_streams
                 }
         except Exception as e:
             logger.error(f"Error fetching match details for {match_id}: {e}")
-            return {"id": match_id, "title": "Error", "hls_url": ""}
+            return {"id": match_id, "title": "Error", "hls_url": "", "streams": []}
 
     # Fallback to simulated/mock data matching SportSRC v2.5 schema for stats, lineups etc
     return get_mock_data(endpoint_type, match_id, extra_params)

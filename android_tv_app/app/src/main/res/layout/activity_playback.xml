@@ -117,6 +117,19 @@
             android:focusable="true"
             android:nextFocusDown="@id/player_view" />
 
+        <Button
+            android:id="@+id/btn_toggle_stats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📊 Stats"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:backgroundTint="#AA000000"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:layout_marginStart="8dp"
+            android:focusable="true" />
+
     </LinearLayout>
 
     <!-- Bottom Overlays: match info + ticker stacked vertically -->
@@ -186,6 +199,141 @@
 
         </FrameLayout>
 
+    </LinearLayout>
+
+    <!-- Right sidebar for SportSRC Match Center details -->
+    <LinearLayout
+        android:id="@+id/match_center_sidebar"
+        android:layout_width="400dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#F20F172A"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📊 SportSRC Match Center"
+            android:textColor="#F3F4F6"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Horizontal buttons for tabs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btn_tv_tab_lineups"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lineups"
+                android:textSize="10sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E293B"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_tv_tab_stats"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Stats"
+                android:textSize="10sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E293B"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_tv_tab_timeline"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Events"
+                android:textSize="10sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E293B"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_tv_tab_odds"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Odds"
+                android:textSize="10sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E293B"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btn_tv_tab_servers"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:text="Servers"
+                android:textSize="10sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E293B"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#1E293B">
+
+            <!-- Stats/Lineups scroll view -->
+            <ScrollView
+                android:id="@+id/scroll_match_center_stats"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp"
+                android:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tv_tv_match_center_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.2"
+                    android:text="Select a tab to view stats." />
+
+            </ScrollView>
+
+            <!-- Servers scroll view -->
+            <ScrollView
+                android:id="@+id/scroll_match_center_servers"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/layout_tv_match_center_servers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </ScrollView>
+
+        </FrameLayout>
     </LinearLayout>
 
 </FrameLayout>

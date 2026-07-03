@@ -905,6 +905,12 @@ async def sportsrc_matches(sport: str = "football", status: str = "inprogress", 
 async def sportsrc_detail(match_id: str):
     return await fetch_sportsrc_data("detail", match_id=match_id)
 
+@app.get("/api/sportsrc/resolve")
+async def sportsrc_resolve(embed_url: str):
+    from scrapers.sportsrc import extract_hls_from_embed
+    hls_url = await extract_hls_from_embed(embed_url)
+    return {"hls_url": hls_url}
+
 @app.get("/api/sportsrc/scores")
 async def sportsrc_scores(date: Optional[str] = None):
     extra = {}
