@@ -1,10 +1,30 @@
 version: '3.8'
 
 services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Cloudflare bypass sidecar — solves CF challenges and returns cookies
+  # so the headless Playwright scraper can navigate past the check.
+  # ─────────────────────────────────────────────────────────────────────────
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: sportstv_flaresolverr
+    restart: always
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false        # set to true only for debugging
+      - TZ=America/New_York
+    ports:
+      - "8191:8191"           # only needed for external access / testing
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # FastAPI backend
+  # ─────────────────────────────────────────────────────────────────────────
   backend:
     build: .
     container_name: sportstv_backend
     restart: always
+    depends_on:
+      - flaresolverr
     ports:
       - "80:8000"
     volumes:
@@ -12,4 +32,8 @@ services:
       - ./db:/app/db
     environment:
       - DATABASE_URL=sqlite:///./db/sports_tv.db
-
+      # Point the scraper at the FlareSolverr sidecar (service name resolves in Docker)
+      - FLARESOLVERR_URL=http://flaresolverr:8191
+      - SPORTSRC_API_KEY=${SPORTSRC_API_KEY}
+      # Optional: uncomment to add a residential proxy as an extra bypass layer
+      # - SCRAPER_PROXY=http://user:pass@proxy.example.com:8001
