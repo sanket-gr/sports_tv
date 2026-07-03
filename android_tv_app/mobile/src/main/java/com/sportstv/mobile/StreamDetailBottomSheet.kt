@@ -103,8 +103,8 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
             dismiss()
         }
 
-        // Setup SportSRC Deep Data Tabs
-        setupMatchCenterTabs()
+        // Setup Stream Servers
+        setupStreamServers()
     }
 
     private fun updateFavoriteButtonState(isFavorite: Boolean) {
@@ -121,144 +121,80 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun setupMatchCenterTabs() {
-        val matchId = if (stream.title.contains("vs", ignoreCase = true)) {
-            stream.title.replace(" ", "-").lowercase() + "-101"
-        } else {
-            "arsenal-vs-chelsea-101"
+    private fun setupStreamServers() {
+        if (!stream.hlsUrl.startsWith("sportsrc://")) {
+            binding.layoutServersContainer.visibility = View.GONE
+            return
         }
 
-        // Default tab selection
-        loadTabContent("lineups", matchId)
-
-        binding.btnTabLineups.setOnClickListener { loadTabContent("lineups", matchId) }
-        binding.btnTabStats.setOnClickListener { loadTabContent("stats", matchId) }
-        binding.btnTabTimeline.setOnClickListener { loadTabContent("timeline", matchId) }
-        binding.btnTabOdds.setOnClickListener { loadTabContent("odds", matchId) }
-        binding.btnTabVotes.setOnClickListener { loadTabContent("votes", matchId) }
-    }
-
-    private fun updateTabStyles(activeTab: String) {
-        selectedTab = activeTab
-        val activeColor = 0xFF3B82F6.toInt() // Neon Blue / Active Blue
-        val inactiveColor = 0xFF94A3B8.toInt() // Slate grey
-
-        binding.btnTabLineups.setTextColor(if (activeTab == "lineups") activeColor else inactiveColor)
-        binding.btnTabStats.setTextColor(if (activeTab == "stats") activeColor else inactiveColor)
-        binding.btnTabTimeline.setTextColor(if (activeTab == "timeline") activeColor else inactiveColor)
-        binding.btnTabOdds.setTextColor(if (activeTab == "odds") activeColor else inactiveColor)
-        binding.btnTabVotes.setTextColor(if (activeTab == "votes") activeColor else inactiveColor)
-    }
-
-    private fun loadTabContent(tab: String, matchId: String) {
-        updateTabStyles(tab)
-        binding.tvMatchCenter_display.text = "Fetching data from SportSRC..."
+        binding.layoutServersContainer.visibility = View.VISIBLE
+        binding.tvServersHint.text = "Fetching available servers..."
+        val matchId = stream.hlsUrl.removePrefix("sportsrc://")
 
         lifecycleScope.launch {
             try {
-                when (tab) {
-                    "lineups" -> {
-                        val lineups = withContext(Dispatchers.IO) {
-                            ApiClient.service.getSportSrcLineups(matchId)
+                val detail = withContext(Dispatchers.IO) {
+                    ApiClient.service.getSportSrcDetail(matchId)
+                }
+                
+                val streams = detail.streams
+                if (streams.isNullOrEmpty()) {
+                    binding.tvServersHint.text = "No stream servers available yet."
+                    return@launch
+                }
+                
+                binding.tvServersHint.text = "Select a server to switch stream quality"
+                binding.layoutServerList.removeAllViews()
+                
+                streams.forEach { streamServer ->
+                    val btn = MaterialButton(requireContext(), null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+                        text = "Server ${streamServer.streamNo} ${if (streamServer.hd) "(HD)" else ""}"
+                        setTextColor(if (streamServer.hd) Color.parseColor("#14B8A6") else Color.parseColor("#94A3B8"))
+                        isAllCaps = false
+                        setOnClickListener {
+                            playSelectedServer(streamServer)
                         }
-                        renderLineups(lineups)
                     }
-                    "stats" -> {
-                        val stats = withContext(Dispatchers.IO) {
-                            ApiClient.service.getSportSrcStats(matchId)
-                        }
-                        renderStats(stats)
-                    }
-                    "timeline" -> {
-                        val incidents = withContext(Dispatchers.IO) {
-                            ApiClient.service.getSportSrcIncidents(matchId)
-                        }
-                        renderTimeline(incidents)
-                    }
-                    "odds" -> {
-                        val odds = withContext(Dispatchers.IO) {
-                            ApiClient.service.getSportSrcOdds(matchId)
-                        }
-                        renderOdds(odds)
-                    }
-                    "votes" -> {
-                        val votes = withContext(Dispatchers.IO) {
-                            ApiClient.service.getSportSrcVotes(matchId)
-                        }
-                        renderPredictions(votes)
-                    }
+                    binding.layoutServerList.addView(btn)
                 }
             } catch (e: Exception) {
-                binding.tvMatchCenter_display.text = "Data unavailable for this match.\nDetails: ${e.localizedMessage}"
+                binding.tvServersHint.text = "Failed to load servers: ${e.localizedMessage}"
             }
         }
     }
 
-    private fun renderLineups(lineups: MatchLineups) {
-        val sb = StringBuilder()
-        sb.append("📋 HOME Formation: ${lineups.home.formation}\n")
-        lineups.home.players.forEach { sb.append("  • ${it.name}\n") }
-        sb.append("\n📋 AWAY Formation: ${lineups.away.formation}\n")
-        lineups.away.players.forEach { sb.append("  • ${it.name}\n") }
-        binding.tvMatchCenter_display.text = sb.toString()
-    }
-
-    private fun renderStats(stats: MatchStats) {
-        val sb = StringBuilder()
-        sb.append("📈 Live Match Stats:\n\n")
-        stats.possession?.let { sb.append("⚽ Possession: Home ${it.home} - Away ${it.away}\n") }
-        stats.shots?.let { sb.append("🎯 Total Shots: Home ${it.home} - Away ${it.away}\n") }
-        stats.xG?.let { sb.append("📊 Expected Goals (xG): Home ${it.home} - Away ${it.away}\n") }
-        stats.shotsOnTarget?.let { sb.append("🥅 Shots On Target: Home ${it.home} - Away ${it.away}\n") }
-        stats.fouls?.let { sb.append("⚠️ Fouls: Home ${it.home} - Away ${it.away}\n") }
-        stats.corners?.let { sb.append("🚩 Corners: Home ${it.home} - Away ${it.away}\n") }
-        binding.tvMatchCenter_display.text = sb.toString()
-    }
-
-    private fun renderTimeline(incidents: List<IncidentItem>) {
-        if (incidents.isEmpty()) {
-            binding.tvMatchCenter_display.text = "No live incidents recorded yet."
-            return
-        }
-        val sb = StringBuilder()
-        sb.append("⏰ Match Events Timeline:\n\n")
-        incidents.forEach {
-            val emoji = when (it.type.lowercase()) {
-                "goal" -> "⚽ GOAL!"
-                "card" -> "🟨 Card"
-                "substitution" -> "🔄 Subs"
-                else -> "📢 Event"
+    private fun playSelectedServer(streamServer: SportSrcStream) {
+        binding.tvServersHint.text = "Resolving stream, please wait..."
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.service.resolveStream(streamServer.embedUrl)
+                }
+                val realHls = response.hlsUrl ?: ""
+                if (realHls.isNotBlank()) {
+                    val proxiedUrl = if (realHls.startsWith("http")) {
+                        val serverBase = BASE_URL
+                        val encodedUrl = android.net.Uri.encode(realHls)
+                        val encodedReferer = android.net.Uri.encode(streamServer.embedUrl)
+                        "${serverBase}api/proxy?url=$encodedUrl&referer=$encodedReferer"
+                    } else {
+                        realHls
+                    }
+                    
+                    val updatedStream = stream.copy(
+                        hlsUrl = proxiedUrl,
+                        iframeUrl = streamServer.embedUrl,
+                        cfDomain = try { android.net.Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
+                    )
+                    PlaybackActivity.start(requireContext(), updatedStream)
+                    dismiss()
+                } else {
+                    binding.tvServersHint.text = "Failed to resolve stream link."
+                }
+            } catch (e: Exception) {
+                binding.tvServersHint.text = "Error resolving stream: ${e.localizedMessage}"
             }
-            sb.append("${it.time} - $emoji: ${it.player} (${it.team.uppercase()}) ${it.detail}\n")
         }
-        binding.tvMatchCenter_display.text = sb.toString()
-    }
-
-    private fun renderOdds(odds: MatchOdds) {
-        val sb = StringBuilder()
-        sb.append("🎲 Betting Odds (via ${odds.bookmaker}):\n\n")
-        sb.append("💵 Decimal Format:\n")
-        sb.append("  • Home: ${odds.decimal.home}\n")
-        sb.append("  • Draw: ${odds.decimal.draw}\n")
-        sb.append("  • Away: ${odds.decimal.away}\n\n")
-        sb.append("💵 Fractional Format:\n")
-        sb.append("  • Home: ${odds.fractional.home}\n")
-        sb.append("  • Draw: ${odds.fractional.draw}\n")
-        sb.append("  • Away: ${odds.fractional.away}\n")
-        binding.tvMatchCenter_display.text = sb.toString()
-    }
-
-    private fun renderPredictions(votes: MatchVotes) {
-        val sb = StringBuilder()
-        sb.append("🗳️ Fan Predictions & Sentiment:\n\n")
-        sb.append("🏆 Who will win?\n")
-        sb.append("  • Home Win: ${votes.winner.home}\n")
-        sb.append("  • Draw: ${votes.winner.draw}\n")
-        sb.append("  • Away Win: ${votes.winner.away}\n\n")
-        sb.append("🥅 Both Teams to Score (BTTS):\n")
-        sb.append("  • Yes: ${votes.btts.yes}\n")
-        sb.append("  • No: ${votes.btts.no}\n")
-        binding.tvMatchCenter_display.text = sb.toString()
     }
 
     override fun onDestroyView() {

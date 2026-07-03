@@ -139,100 +139,44 @@
             android:background="#334155"
             app:layout_constraintTop_toBottomOf="@id/layout_actions" />
 
-        <!-- Match Center Title -->
-        <TextView
-            android:id="@+id/tv_match_center_title"
-            android:layout_width="wrap_content"
+        <!-- Stream Servers Section -->
+        <LinearLayout
+            android:id="@+id/layout_servers_container"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="📊 SportSRC Match Center"
-            android:textColor="@color/glass_text_primary"
-            android:textSize="16sp"
-            android:textStyle="bold"
+            android:orientation="vertical"
+            android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/divider_match_center"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <!-- Horizontal Tab Selector -->
-        <HorizontalScrollView
-            android:id="@+id/hsv_tabs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:scrollbars="none"
-            app:layout_constraintTop_toBottomOf="@id/tv_match_center_title">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tab_lineups"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Lineups"
-                    android:textColor="@color/neon_blue"
-                    android:textAllCaps="false"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tab_stats"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Stats"
-                    android:textColor="@color/glass_text_secondary"
-                    android:textAllCaps="false"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tab_timeline"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Timeline"
-                    android:textColor="@color/glass_text_secondary"
-                    android:textAllCaps="false"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tab_odds"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Odds"
-                    android:textColor="@color/glass_text_secondary"
-                    android:textAllCaps="false"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tab_votes"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Predictions"
-                    android:textColor="@color/glass_text_secondary"
-                    android:textAllCaps="false"/>
-
-            </LinearLayout>
-        </HorizontalScrollView>
-
-        <!-- Match Center Content Box -->
-        <FrameLayout
-            android:id="@+id/fl_match_center_content"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:padding="16dp"
-            android:background="#1E293B"
-            app:layout_constraintTop_toBottomOf="@id/hsv_tabs"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <TextView
-                android:id="@+id/tv_match_center_display"
+                android:id="@+id/tv_servers_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📡 Stream Servers"
+                android:textColor="@color/glass_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_servers_hint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Select a server to switch stream quality"
                 android:textColor="@color/glass_text_secondary"
-                android:textSize="14sp"
-                android:text="Select a tab to view match details" />
-        </FrameLayout>
+                android:textSize="13sp" />
+
+            <!-- Container for dynamic server buttons -->
+            <LinearLayout
+                android:id="@+id/layout_server_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

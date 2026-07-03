@@ -105,16 +105,40 @@ class MainActivity : AppCompatActivity() {
                 val streams = withContext(Dispatchers.IO) {
                     ApiClient.service.getStreams(liveOnly = false)
                 }
-                allStreams = streams
 
-                if (streams.isEmpty()) {
+                val sportSrcStreams = try {
+                    withContext(Dispatchers.IO) {
+                        ApiClient.service.getSportSrcMatches().map { match ->
+                            StreamItem(
+                                id = match.id.hashCode(),
+                                categoryId = -1,
+                                categoryName = "Live Matches",
+                                categoryIcon = "🏆",
+                                title = match.title,
+                                participants = match.title,
+                                sport = match.sport,
+                                hlsUrl = "sportsrc://${match.id}",
+                                thumbnailUrl = "",
+                                isLive = true
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                // Combine sportSrc streams with regular streams
+                val combinedStreams = sportSrcStreams + streams
+                allStreams = combinedStreams
+
+                if (combinedStreams.isEmpty()) {
                     statusTextView.text = "No streams found"
                     statusTextView.visibility = View.VISIBLE
                 } else {
                     statusTextView.visibility = View.GONE
                     binding.container.removeAllViews()
                     binding.container.addView(recyclerView)
-                    streamAdapter.updateData(streams)
+                    streamAdapter.updateData(combinedStreams)
                 }
             } catch (e: Exception) {
                 statusTextView.text = "Error fetching streams:\n${e.message}"

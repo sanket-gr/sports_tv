@@ -48,30 +48,21 @@ interface SportsApiService {
         @Body request: WatchTimeRequest
     ): WatchTimeResponse
 
-    @GET("api/sportsrc/lineups/{id}")
-    suspend fun getSportSrcLineups(
-        @Path("id") id: String,
-    ): MatchLineups
+    @GET("api/sportsrc/matches")
+    suspend fun getSportSrcMatches(
+        @Query("status") status: String = "inprogress",
+        @Query("sport") sport: String = "football"
+    ): List<SportSrcMatch>
 
-    @GET("api/sportsrc/stats/{id}")
-    suspend fun getSportSrcStats(
+    @GET("api/sportsrc/detail/{id}")
+    suspend fun getSportSrcDetail(
         @Path("id") id: String,
-    ): MatchStats
+    ): SportSrcMatchDetail
 
-    @GET("api/sportsrc/incidents/{id}")
-    suspend fun getSportSrcIncidents(
-        @Path("id") id: String,
-    ): List<IncidentItem>
-
-    @GET("api/sportsrc/odds/{id}")
-    suspend fun getSportSrcOdds(
-        @Path("id") id: String,
-    ): MatchOdds
-
-    @GET("api/sportsrc/votes/{id}")
-    suspend fun getSportSrcVotes(
-        @Path("id") id: String,
-    ): MatchVotes
+    @GET("api/sportsrc/resolve")
+    suspend fun resolveStream(
+        @Query("embed_url") embedUrl: String
+    ): ResolveResponse
 }
 
 // ─── Singleton client ─────────────────────────────────────────────────────────

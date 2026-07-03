@@ -15,6 +15,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -155,7 +158,9 @@ class PlaybackActivity : AppCompatActivity() {
 
         // Start playback
         val isProxied = hlsUrl.contains("/api/proxy")
-        if (hlsUrl.isNotBlank() && isProxied) {
+        if (hlsUrl.startsWith("sportsrc://")) {
+            resolveSportSrcAndPlay(hlsUrl)
+        } else if (hlsUrl.isNotBlank() && isProxied) {
             initPlayer(hlsUrl)
         } else {
             refreshAndPlay()
@@ -208,6 +213,57 @@ class PlaybackActivity : AppCompatActivity() {
             "$scheme://$host/"
         } catch (e: Exception) {
             url
+        }
+    }
+
+    private fun resolveSportSrcAndPlay(sportSrcUrl: String) {
+        val matchId = sportSrcUrl.removePrefix("sportsrc://")
+        showLoading(true)
+        showError(false)
+        lifecycleScope.launch {
+            try {
+                // 1. Get match detail to find available stream servers
+                val detail = withContext(Dispatchers.IO) {
+                    ApiClient.service.getSportSrcDetail(matchId)
+                }
+                
+                val streams = detail.streams
+                if (streams.isNullOrEmpty()) {
+                    showError(true, "No streams available for this match yet.", 0)
+                    return@launch
+                }
+                
+                // Auto-pick the first stream (preferably HD if available, otherwise just first)
+                val targetStream = streams.find { it.hd } ?: streams.first()
+                
+                // 2. Resolve the stream server to get the actual HLS link
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.service.resolveStream(targetStream.embedUrl)
+                }
+                
+                val realHls = response.hlsUrl ?: ""
+                if (realHls.isNotBlank()) {
+                    iframeUrl = targetStream.embedUrl
+                    cfDomain = try { android.net.Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
+
+                    val proxiedUrl = if (realHls.startsWith("http")) {
+                        val serverBase = BASE_URL
+                        val encodedUrl = android.net.Uri.encode(realHls)
+                        val encodedReferer = android.net.Uri.encode(targetStream.embedUrl)
+                        "${serverBase}api/proxy?url=$encodedUrl&referer=$encodedReferer"
+                    } else {
+                        realHls
+                    }
+                    
+                    hlsUrl = proxiedUrl
+                    initPlayer(proxiedUrl)
+                } else {
+                    showError(true, "Failed to resolve SportSRC stream.", 0)
+                }
+                
+            } catch (e: Exception) {
+                showError(true, "SportSRC error: ${e.localizedMessage}", 0)
+            }
         }
     }
 

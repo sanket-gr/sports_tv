@@ -28,10 +28,22 @@ object UpdateChecker {
             return
         }
 
-        val currentVersionCode = BuildConfig.VERSION_CODE
+        val currentVersionCode = try {
+            activity.packageManager.getPackageInfo(activity.packageName, 0).let {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    it.longVersionCode.toInt()
+                } else {
+                    @Suppress("DEPRECATION")
+                    it.versionCode
+                }
+            }
+        } catch (e: Exception) {
+            1
+        }
+        
         Log.d(TAG, "Current version: $currentVersionCode, server version: ${versionInfo.versionCode}")
 
-        if (versionInfo.versionCode <= currentVersionCode) {
+        if (versionInfo.versionCode.toInt() <= currentVersionCode) {
             if (showToastIfLatest) {
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(activity, "App is already up to date (v${versionInfo.versionName})", android.widget.Toast.LENGTH_SHORT).show()
