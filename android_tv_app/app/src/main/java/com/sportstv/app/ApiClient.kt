@@ -23,6 +23,11 @@ const val BASE_URL = "http://13.204.129.74/"
 // ─── Retrofit interface ──────────────────────────────────────────────────────
 interface SportsApiService {
 
+    @GET("api/version")
+    suspend fun getVersion(
+        @Query("platform") platform: String = "tv"
+    ): VersionInfo
+
     @GET("api/streams")
     suspend fun getStreams(
         @Query("live_only") liveOnly: Boolean = true,
@@ -39,6 +44,42 @@ interface SportsApiService {
     suspend fun refreshStream(
         @Path("id") id: Int,
     ): StreamItem
+
+    @GET("api/sportsrc/lineups/{id}")
+    suspend fun getSportSrcLineups(
+        @Path("id") id: String,
+    ): MatchLineups
+
+    @GET("api/sportsrc/stats/{id}")
+    suspend fun getSportSrcStats(
+        @Path("id") id: String,
+    ): MatchStats
+
+    @GET("api/sportsrc/incidents/{id}")
+    suspend fun getSportSrcIncidents(
+        @Path("id") id: String,
+    ): List<IncidentItem>
+
+    @GET("api/sportsrc/odds/{id}")
+    suspend fun getSportSrcOdds(
+        @Path("id") id: String,
+    ): MatchOdds
+
+    @GET("api/sportsrc/votes/{id}")
+    suspend fun getSportSrcVotes(
+        @Path("id") id: String,
+    ): MatchVotes
+
+    @GET("api/sportsrc/matches")
+    suspend fun getSportSrcMatches(
+        @Query("status") status: String = "inprogress",
+        @Query("sport") sport: String = "football"
+    ): List<SportSrcMatch>
+
+    @GET("api/sportsrc/detail/{id}")
+    suspend fun getSportSrcDetail(
+        @Path("id") id: String,
+    ): SportSrcMatchDetail
 }
 
 // ─── Singleton client ─────────────────────────────────────────────────────────

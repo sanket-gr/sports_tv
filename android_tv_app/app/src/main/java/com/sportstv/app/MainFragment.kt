@@ -44,13 +44,27 @@ class MainFragment : BrowseSupportFragment() {
         isHeadersTransitionOnBackEnabled = true
         brandColor     = requireContext().getColor(R.color.brand_color)
         badgeDrawable  = null
+        searchAffordanceColor = requireContext().getColor(R.color.brand_color)
+
+        // ── Search Orb → Launch SearchActivity ──────────────────────────────
+        setOnSearchClickedListener {
+            val intent = android.content.Intent(requireContext(), SearchActivity::class.java)
+            startActivity(intent)
+        }
 
         adapter = rowsAdapter
 
         // ── Item click → open player ──────────────────────────────────────────
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
             val stream = item as StreamItem
-            PlaybackActivity.start(requireContext(), stream)
+            if (stream.hlsUrl == "system://update") {
+                lifecycleScope.launch {
+                    Toast.makeText(requireContext(), "Checking for updates...", Toast.LENGTH_SHORT).show()
+                    UpdateChecker.checkForUpdate(requireActivity(), showToastIfLatest = true)
+                }
+            } else {
+                PlaybackActivity.start(requireContext(), stream)
+            }
         }
         
         // ── Long click → toggle favorite ─────────────────────────────────────
@@ -80,6 +94,26 @@ class MainFragment : BrowseSupportFragment() {
                 val streams = ApiClient.service.getStreams(liveOnly = false)
                 val favs = getFavoritesSet()
 
+                // Fetch SportSRC matches
+                val sportSrcStreams = try {
+                    ApiClient.service.getSportSrcMatches().map { match ->
+                        StreamItem(
+                            id = match.id.hashCode(),
+                            categoryId = -1,
+                            categoryName = "SportSRC",
+                            categoryIcon = "🏆",
+                            title = match.title,
+                            participants = match.title,
+                            sport = match.sport,
+                            hlsUrl = "sportsrc://${match.id}",
+                            thumbnailUrl = "",
+                            isLive = true
+                        )
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
                 // Separate Live vs Upcoming
                 val liveStreams = streams.filter { it.isLive }
                 val upcomingStreams = streams.filter { !it.isLive }
@@ -95,6 +129,14 @@ class MainFragment : BrowseSupportFragment() {
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     favoriteStreams.forEach { listRowAdapter.add(it) }
                     rowsAdapter.add(ListRow(HeaderItem("⭐ Favorites"), listRowAdapter))
+                }
+
+                // 1.5. SportSRC Live Matches Row
+                if (sportSrcStreams.isNotEmpty()) {
+                    val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
+                    val listRowAdapter = ArrayObjectAdapter(cardPresenter)
+                    sportSrcStreams.forEach { listRowAdapter.add(it) }
+                    rowsAdapter.add(ListRow(HeaderItem("🏆 SportSRC Live Matches"), listRowAdapter))
                 }
 
                 // 2. Live Categories
@@ -116,7 +158,26 @@ class MainFragment : BrowseSupportFragment() {
                     rowsAdapter.add(ListRow(HeaderItem("📅 Upcoming / Offline"), listRowAdapter))
                 }
 
-                if (streams.isEmpty()) {
+                // 4. Update Check Row
+                val updateCardPresenter = CardPresenter(favs) { }
+                val updateRowAdapter = ArrayObjectAdapter(updateCardPresenter)
+                updateRowAdapter.add(
+                    StreamItem(
+                        id = 999999,
+                        categoryId = -2,
+                        categoryName = "System",
+                        categoryIcon = "⚙️",
+                        title = "Check for Updates",
+                        participants = "System Update Manager",
+                        sport = "System",
+                        hlsUrl = "system://update",
+                        thumbnailUrl = "",
+                        isLive = false
+                    )
+                )
+                rowsAdapter.add(ListRow(HeaderItem("⚙️ System Updates"), updateRowAdapter))
+
+                if (streams.isEmpty() && sportSrcStreams.isEmpty()) {
                     Toast.makeText(
                         requireContext(),
                         "No streams available. Add some via the admin panel.",

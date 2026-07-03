@@ -44,6 +44,12 @@
             android:screenOrientation="landscape"
             android:theme="@style/Theme.SportsTv.Playback" />
 
+        <!-- Search Activity -->
+        <activity
+            android:name=".SearchActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
     </application>
 
 </manifest>

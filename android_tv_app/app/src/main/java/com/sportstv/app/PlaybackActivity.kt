@@ -29,6 +29,8 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.launch
 import com.sportstv.app.model.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 /**
  * PlaybackActivity – full-screen ExoPlayer for HLS streams.
  *
@@ -68,6 +70,7 @@ class PlaybackActivity : FragmentActivity() {
 
     private var streamId: Int = -1
     private var hlsUrl: String = ""
+    private var originalUrl: String = ""
     private var iframeUrl: String = ""
     private var cfDomain: String = ""
 
@@ -91,6 +94,7 @@ class PlaybackActivity : FragmentActivity() {
 
         // Grab stream info
         hlsUrl       = intent.getStringExtra("hls_url") ?: ""
+        originalUrl  = hlsUrl
         streamId     = intent.getIntExtra("stream_id", -1)
         iframeUrl    = intent.getStringExtra("iframe_url") ?: ""
         cfDomain     = intent.getStringExtra("cf_domain") ?: ""
@@ -129,17 +133,19 @@ class PlaybackActivity : FragmentActivity() {
 
 
         // ── Retry button ────────────────────────────────────────────────────
-        btnRetry.setOnClickListener { refreshAndPlay() }
+        btnRetry.setOnClickListener { triggerRetry() }
 
         // If hlsUrl is a direct IP URL (not proxied via backend), always refresh first
         val isProxied = hlsUrl.contains("/api/proxy")
         val isIpUrl   = hlsUrl.matches(Regex("""https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.*"""))
 
-        if (hlsUrl.isNotBlank() && isProxied) {
+        if (hlsUrl.startsWith("sportsrc://")) {
+            resolveSportSrcAndPlay(hlsUrl)
+        } else if (hlsUrl.isNotBlank() && isProxied) {
             initPlayer(hlsUrl)
         } else {
             // No URL, or old-style direct IP URL → fetch fresh proxied URL from backend
-            refreshAndPlay()
+            triggerRetry()
         }
 
         // Hide match info overlay + ticker toggle button after 4 seconds
@@ -150,6 +156,30 @@ class PlaybackActivity : FragmentActivity() {
                 topControls.visibility = View.GONE
             }.start()
         }, 4000)
+
+        // ── SportSRC Match Center Sidebar setup ─────────────────────────────
+        val sidebar = findViewById<View>(R.id.match_center_sidebar)
+        val btnToggleStats = findViewById<Button>(R.id.btn_toggle_stats)
+        val btnTabLineups = findViewById<Button>(R.id.btn_tv_tab_lineups)
+        val btnTabStats = findViewById<Button>(R.id.btn_tv_tab_stats)
+        val btnTabTimeline = findViewById<Button>(R.id.btn_tv_tab_timeline)
+        val btnTabOdds = findViewById<Button>(R.id.btn_tv_tab_odds)
+        val tvContent = findViewById<TextView>(R.id.tv_tv_match_center_content)
+
+        val matchId = if (title.contains("vs", ignoreCase = true)) {
+            title.replace(" ", "-").lowercase() + "-101"
+        } else {
+            "arsenal-vs-chelsea-101"
+        }
+
+        btnToggleStats.setOnClickListener {
+            toggleSidebar(sidebar.visibility == View.GONE)
+        }
+
+        btnTabLineups.setOnClickListener { loadTabContent("lineups", matchId, tvContent) }
+        btnTabStats.setOnClickListener { loadTabContent("stats", matchId, tvContent) }
+        btnTabTimeline.setOnClickListener { loadTabContent("timeline", matchId, tvContent) }
+        btnTabOdds.setOnClickListener { loadTabContent("odds", matchId, tvContent) }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -242,7 +272,7 @@ class PlaybackActivity : FragmentActivity() {
                         // Token expired — auto-refresh from backend silently
                         msg.contains("404") || msg.contains("403") -> {
                             Log.d(TAG, "Stream token expired, auto-refreshing...")
-                            refreshAndPlay()
+                            triggerRetry()
                         }
                         msg.contains("Unable to connect") ||
                         msg.contains("Failed to connect") ||
@@ -321,6 +351,38 @@ class PlaybackActivity : FragmentActivity() {
         }
     }
 
+    private fun resolveSportSrcAndPlay(url: String) {
+        val matchId = url.removePrefix("sportsrc://")
+        showLoading(true)
+        showError(false)
+        lifecycleScope.launch {
+            try {
+                val detail = withContext(Dispatchers.IO) {
+                    ApiClient.service.getSportSrcDetail(matchId)
+                }
+                val realHls = detail.hlsUrl ?: ""
+                if (realHls.isNotBlank()) {
+                    hlsUrl = realHls
+                    initPlayer(realHls)
+                } else {
+                    showLoading(false)
+                    showError(true, "No active HLS link found for this match.")
+                }
+            } catch (e: Exception) {
+                showLoading(false)
+                showError(true, "Failed to load match details.\n${e.localizedMessage}")
+            }
+        }
+    }
+
+    private fun triggerRetry() {
+        if (originalUrl.startsWith("sportsrc://")) {
+            resolveSportSrcAndPlay(originalUrl)
+        } else {
+            refreshAndPlay()
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // UI helpers
     // ─────────────────────────────────────────────────────────────────────────
@@ -344,7 +406,7 @@ class PlaybackActivity : FragmentActivity() {
                         kotlinx.coroutines.delay(1000)
                     }
                     tvErrorCountdown.text = "Retrying now..."
-                    refreshAndPlay()
+                    triggerRetry()
                 }
             } else {
                 tvErrorCountdown.visibility = View.GONE
@@ -358,6 +420,24 @@ class PlaybackActivity : FragmentActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
+            KeyEvent.KEYCODE_BACK -> {
+                val sidebar = findViewById<View>(R.id.match_center_sidebar)
+                if (sidebar.visibility == View.VISIBLE) {
+                    toggleSidebar(false)
+                    true
+                } else {
+                    super.onKeyDown(keyCode, event)
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                val sidebar = findViewById<View>(R.id.match_center_sidebar)
+                if (sidebar.visibility == View.GONE) {
+                    toggleSidebar(true)
+                    true
+                } else {
+                    super.onKeyDown(keyCode, event)
+                }
+            }
             KeyEvent.KEYCODE_DPAD_CENTER,
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
@@ -372,6 +452,87 @@ class PlaybackActivity : FragmentActivity() {
                 true
             }
             else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    private fun toggleSidebar(show: Boolean) {
+        val sidebar = findViewById<View>(R.id.match_center_sidebar)
+        sidebar.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) {
+            findViewById<View>(R.id.btn_tv_tab_lineups).requestFocus()
+            val title = intent.getStringExtra("title") ?: ""
+            val matchId = if (title.contains("vs", ignoreCase = true)) {
+                title.replace(" ", "-").lowercase() + "-101"
+            } else {
+                "arsenal-vs-chelsea-101"
+            }
+            loadTabContent("lineups", matchId, findViewById(R.id.tv_tv_match_center_content))
+        }
+    }
+
+    private fun loadTabContent(tab: String, matchId: String, tvContent: TextView) {
+        tvContent.text = "Loading stats..."
+        lifecycleScope.launch {
+            try {
+                when (tab) {
+                    "lineups" -> {
+                        val lineups = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcLineups(matchId) }
+                        val sb = StringBuilder()
+                        sb.append("📋 HOME Formation: ${lineups.home.formation}\n")
+                        lineups.home.players.forEach { sb.append("  • ${it.name}\n") }
+                        sb.append("\n📋 AWAY Formation: ${lineups.away.formation}\n")
+                        lineups.away.players.forEach { sb.append("  • ${it.name}\n") }
+                        tvContent.text = sb.toString()
+                    }
+                    "stats" -> {
+                        val stats = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcStats(matchId) }
+                        val sb = StringBuilder()
+                        sb.append("📈 Live Match Stats:\n\n")
+                        stats.possession?.let { sb.append("⚽ Possession: Home ${it.home} - Away ${it.away}\n") }
+                        stats.shots?.let { sb.append("🎯 Total Shots: Home ${it.home} - Away ${it.away}\n") }
+                        stats.xG?.let { sb.append("📊 Expected Goals (xG): Home ${it.home} - Away ${it.away}\n") }
+                        stats.shotsOnTarget?.let { sb.append("🥅 Shots On Target: Home ${it.home} - Away ${it.away}\n") }
+                        stats.fouls?.let { sb.append("⚠️ Fouls: Home ${it.home} - Away ${it.away}\n") }
+                        stats.corners?.let { sb.append("🚩 Corners: Home ${it.home} - Away ${it.away}\n") }
+                        tvContent.text = sb.toString()
+                    }
+                    "timeline" -> {
+                        val incidents = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcIncidents(matchId) }
+                        if (incidents.isEmpty()) {
+                            tvContent.text = "No live events recorded yet."
+                        } else {
+                            val sb = StringBuilder()
+                            sb.append("⏰ Match Events:\n\n")
+                            incidents.forEach {
+                                val emoji = when (it.type.lowercase()) {
+                                    "goal" -> "⚽ GOAL!"
+                                    "card" -> "🟨 Card"
+                                    "substitution" -> "🔄 Subs"
+                                    else -> "📢 Event"
+                                }
+                                sb.append("${it.time} - $emoji: ${it.player} (${it.team.uppercase()}) ${it.detail}\n")
+                            }
+                            tvContent.text = sb.toString()
+                        }
+                    }
+                    "odds" -> {
+                        val odds = withContext(Dispatchers.IO) { ApiClient.service.getSportSrcOdds(matchId) }
+                        val sb = StringBuilder()
+                        sb.append("🎲 Betting Odds (via ${odds.bookmaker}):\n\n")
+                        sb.append("💵 Decimal Format:\n")
+                        sb.append("  • Home: ${odds.decimal.home}\n")
+                        sb.append("  • Draw: ${odds.decimal.draw}\n")
+                        sb.append("  • Away: ${odds.decimal.away}\n\n")
+                        sb.append("💵 Fractional Format:\n")
+                        sb.append("  • Home: ${odds.fractional.home}\n")
+                        sb.append("  • Draw: ${odds.fractional.draw}\n")
+                        sb.append("  • Away: ${odds.fractional.away}\n")
+                        tvContent.text = sb.toString()
+                    }
+                }
+            } catch (e: Exception) {
+                tvContent.text = "Stats currently unavailable for this event.\nDetails: ${e.localizedMessage}"
+            }
         }
     }
 
