@@ -362,8 +362,20 @@ class PlaybackActivity : FragmentActivity() {
                 }
                 val realHls = detail.hlsUrl ?: ""
                 if (realHls.isNotBlank()) {
-                    hlsUrl = realHls
-                    initPlayer(realHls)
+                    iframeUrl = detail.streamUrl ?: ""
+                    cfDomain = try { Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
+                    
+                    // Route through backend proxy to handle Referer/Origin headers and bypass CORS
+                    val proxiedUrl = if (realHls.startsWith("http")) {
+                        val encodedHls = Uri.encode(realHls)
+                        val encodedReferer = Uri.encode(iframeUrl)
+                        "${BASE_URL}api/proxy?url=$encodedHls&referer=$encodedReferer"
+                    } else {
+                        realHls
+                    }
+                    
+                    hlsUrl = proxiedUrl
+                    initPlayer(proxiedUrl)
                 } else {
                     showLoading(false)
                     showError(true, "No active HLS link found for this match.")
