@@ -264,6 +264,7 @@
     </div>
     <nav class="sidebar-nav">
       <a href="/admin" class="active">🏠 &nbsp;Dashboard</a>
+      <a href="#app-updates">🚀 &nbsp;App Updates</a>
       <a href="/api/streams" target="_blank">📡 &nbsp;API – Streams</a>
       <a href="/api/categories" target="_blank">🗂️ &nbsp;API – Categories</a>
       <a href="/docs" target="_blank">📖 &nbsp;API Docs</a>
@@ -508,6 +509,77 @@
           No streams yet. Add one above!
         </p>
       {% endif %}
+    </div>
+
+    <!-- App Updates & Release Manager -->
+    <div class="panel" id="app-updates">
+      <div class="panel-title">🚀 App Updates & Release Manager</div>
+      
+      <!-- Current Version Status Table -->
+      <div class="table-wrap" style="margin-bottom: 24px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Version Name</th>
+              <th>Version Code</th>
+              <th>Release Notes</th>
+              <th>Download Link</th>
+              <th>Last Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in versions %}
+            <tr>
+              <td><span class="badge {{ 'badge-live' if v.platform == 'tv' else 'badge-extract' }}">{{ v.platform | upper }}</span></td>
+              <td><strong>{{ v.version_name }}</strong></td>
+              <td><code>{{ v.version_code }}</code></td>
+              <td>{{ v.release_notes }}</td>
+              <td>
+                <a href="/download/{{ v.platform }}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none; display: inline-block; border: 1px solid var(--border);">⬇️ Download</a>
+              </td>
+              <td>{{ v.updated_at.strftime('%Y-%m-%d %H:%M:%S') if v.updated_at else 'Never' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Update Version Form -->
+      <form method="post" action="/admin/version/update" enctype="multipart/form-data">
+        <div class="form-row" style="margin-bottom: 12px;">
+          <div class="form-group" style="max-width: 180px;">
+            <label>Platform</label>
+            <select name="platform" required style="width: 100%;">
+              <option value="tv">Android TV</option>
+              <option value="mobile">Android Mobile</option>
+            </select>
+          </div>
+          <div class="form-group" style="max-width: 180px;">
+            <label>Version Code (Integer)</label>
+            <input type="number" name="version_code" placeholder="e.g. 3" min="1" required style="width: 100%;">
+          </div>
+          <div class="form-group" style="max-width: 180px;">
+            <label>Version Name (String)</label>
+            <input type="text" name="version_name" placeholder="e.g. 1.2" required style="width: 100%;">
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom: 12px; align-items: flex-start;">
+          <div class="form-group" style="flex: 2;">
+            <label>Release Notes</label>
+            <input type="text" name="release_notes" placeholder="Describe the changes in this update..." class="wide" style="width: 100%;">
+          </div>
+          <div class="form-group" style="flex: 1; min-width: 200px;">
+            <label>Upload New APK File (Optional)</label>
+            <input type="file" name="apk_file" accept=".apk" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex: none; margin-left: auto;">
+            <button type="submit" class="btn btn-primary">🚀 Push Update & Upload APK</button>
+          </div>
+        </div>
+      </form>
     </div>
 
     <!-- Categories Manager -->

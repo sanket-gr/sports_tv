@@ -88,6 +88,17 @@ class WatchAnalytics(Base):
     stream           = relationship("Stream")
 
 
+class AppVersion(Base):
+    __tablename__ = "app_versions"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    platform       = Column(String(50), unique=True, nullable=False) # "tv" or "mobile"
+    version_code   = Column(Integer, nullable=False, default=1)
+    version_name   = Column(String(50), nullable=False, default="1.0")
+    release_notes  = Column(Text, default="")
+    updated_at     = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Any
 
-from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks, HTTPException, status
+from fastapi import FastAPI, Depends, Request, Form, BackgroundTasks, HTTPException, status, File, UploadFile
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -38,7 +38,7 @@ import asyncio
 import httpx
 from playwright.async_api import async_playwright
 
-from database import get_db, create_tables, Category, Stream, SourceConfig, WatchAnalytics
+from database import get_db, create_tables, Category, Stream, SourceConfig, WatchAnalytics, AppVersion
 from scrapers import extract_async as run_scrapers_extract
 
 import logging
@@ -134,6 +134,14 @@ async def lifespan(app: FastAPI):
         db.add_all(sources)
         db.commit()
 
+    # Seed initial AppVersion if missing
+    if db.query(AppVersion).count() == 0:
+        db.add_all([
+            AppVersion(platform="tv", version_code=2, version_name="1.1", release_notes="In-app self-update checker added."),
+            AppVersion(platform="mobile", version_code=1, version_name="1.0", release_notes="Initial release.")
+        ])
+        db.commit()
+
     db.close()
     
     # Launch persistent playwright session
@@ -156,7 +164,9 @@ async def lifespan(app: FastAPI):
     admin_username = os.environ.get("ADMIN_USERNAME")
     admin_password = os.environ.get("ADMIN_PASSWORD")
     if not admin_username or not admin_password:
-        logger.warning("WARNING: Admin panel is running WITHOUT authentication. Set ADMIN_USERNAME and ADMIN_PASSWORD env variables to secure it.")
+        logger.warning("WARNING: Admin panel is running with default authentication credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD env variables to override.")
+        admin_username = admin_username or "admin"
+        admin_password = admin_password or "sanket@123"
 
     yield  # App runs here
     
@@ -180,10 +190,8 @@ app.mount("/apks", StaticFiles(directory=str(APKS_DIR)), name="apks")
 security = HTTPBasic(auto_error=False)
 
 def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(security)):
-    admin_username = os.environ.get("ADMIN_USERNAME")
-    admin_password = os.environ.get("ADMIN_PASSWORD")
-    if not admin_username or not admin_password:
-        return True
+    admin_username = os.environ.get("ADMIN_USERNAME") or "admin"
+    admin_password = os.environ.get("ADMIN_PASSWORD") or "sanket@123"
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -245,6 +253,8 @@ def admin_dashboard(
     online_sources = sum(1 for s in sources if s.last_health_status == "Online")
     total_sources = len(sources)
     
+    versions   = db.query(AppVersion).all()
+    
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
@@ -254,7 +264,8 @@ def admin_dashboard(
             "sources": sources,
             "total_hours": total_hours,
             "online_sources": online_sources,
-            "total_sources": total_sources
+            "total_sources": total_sources,
+            "versions": versions
         },
     )
 
@@ -652,15 +663,54 @@ async def hls_proxy(
 
 
 @app.get("/api/version")
-def api_version(request: Request, platform: str = "tv"):
+def api_version(request: Request, platform: str = "tv", db: Session = Depends(get_db)):
+    version = db.query(AppVersion).filter_by(platform=platform).first()
     base_url = str(request.base_url)
     apk_filename = "tv.apk" if platform == "tv" else "mobile.apk"
+    if not version:
+        return {
+            "version_code": 2,
+            "version_name": "1.1",
+            "apk_url": f"{base_url}apks/{apk_filename}",
+            "release_notes": "In-app self-update checker added."
+        }
     return {
-        "version_code": 2,
-        "version_name": "1.1",
+        "version_code": version.version_code,
+        "version_name": version.version_name,
         "apk_url": f"{base_url}apks/{apk_filename}",
-        "release_notes": "In-app self-update checker added."
+        "release_notes": version.release_notes
     }
+
+@app.post("/admin/version/update")
+async def update_app_version(
+    platform: str = Form(...),
+    version_code: int = Form(...),
+    version_name: str = Form(...),
+    release_notes: str = Form(""),
+    apk_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    authenticated: bool = Depends(get_current_admin),
+):
+    version = db.query(AppVersion).filter_by(platform=platform).first()
+    if not version:
+        version = AppVersion(platform=platform)
+        db.add(version)
+    
+    version.version_code = version_code
+    version.version_name = version_name
+    version.release_notes = release_notes
+    db.commit()
+    
+    if apk_file and apk_file.filename:
+        apks_dir = Path(__file__).parent / "apks"
+        apks_dir.mkdir(parents=True, exist_ok=True)
+        apk_filename = "tv.apk" if platform == "tv" else "mobile.apk"
+        dest_path = apks_dir / apk_filename
+        with open(dest_path, "wb") as buffer:
+            content = await apk_file.read()
+            buffer.write(content)
+            
+    return RedirectResponse("/admin?success=version_updated", status_code=303)
 
 @app.get("/api/categories")
 def api_categories(db: Session = Depends(get_db)):
@@ -825,6 +875,81 @@ async def health_check_sources(db: Session = Depends(get_db)):
             
     db.commit()
     return {"sources": results}
+
+
+
+
+
+# ===========================================================================
+# SportSRC V2.5 API Proxy Endpoints
+# ===========================================================================
+
+from scrapers.sportsrc import fetch_sportsrc_data
+
+@app.get("/api/sportsrc/matches")
+async def sportsrc_matches(sport: str = "football", status: str = "inprogress", date: Optional[str] = None):
+    extra = {"sport": sport, "status": status}
+    if date:
+        extra["date"] = date
+    return await fetch_sportsrc_data("matches", extra_params=extra)
+
+@app.get("/api/sportsrc/detail/{match_id}")
+async def sportsrc_detail(match_id: str):
+    return await fetch_sportsrc_data("detail", match_id=match_id)
+
+@app.get("/api/sportsrc/scores")
+async def sportsrc_scores(date: Optional[str] = None):
+    extra = {}
+    if date:
+        extra["date"] = date
+    return await fetch_sportsrc_data("scores", extra_params=extra)
+
+@app.get("/api/sportsrc/lineups/{match_id}")
+async def sportsrc_lineups(match_id: str):
+    return await fetch_sportsrc_data("lineups", match_id=match_id)
+
+@app.get("/api/sportsrc/stats/{match_id}")
+async def sportsrc_stats(match_id: str):
+    return await fetch_sportsrc_data("stats", match_id=match_id)
+
+@app.get("/api/sportsrc/incidents/{match_id}")
+async def sportsrc_incidents(match_id: str):
+    return await fetch_sportsrc_data("incidents", match_id=match_id)
+
+@app.get("/api/sportsrc/h2h/{match_id}")
+async def sportsrc_h2h(match_id: str):
+    return await fetch_sportsrc_data("h2h", match_id=match_id)
+
+@app.get("/api/sportsrc/standing/{match_id}")
+async def sportsrc_standing(match_id: str, league_id: Optional[str] = None):
+    extra = {}
+    if league_id:
+        extra["league_id"] = league_id
+    return await fetch_sportsrc_data("standing", match_id=match_id, extra_params=extra)
+
+@app.get("/api/sportsrc/graph/{match_id}")
+async def sportsrc_graph(match_id: str):
+    return await fetch_sportsrc_data("graph", match_id=match_id)
+
+@app.get("/api/sportsrc/odds/{match_id}")
+async def sportsrc_odds(match_id: str):
+    return await fetch_sportsrc_data("odds", match_id=match_id)
+
+@app.get("/api/sportsrc/votes/{match_id}")
+async def sportsrc_votes(match_id: str):
+    return await fetch_sportsrc_data("votes", match_id=match_id)
+
+@app.get("/api/sportsrc/shotmap/{match_id}")
+async def sportsrc_shotmap(match_id: str):
+    return await fetch_sportsrc_data("shotmap", match_id=match_id)
+
+@app.get("/api/sportsrc/highlights/{match_id}")
+async def sportsrc_highlights(match_id: str):
+    return await fetch_sportsrc_data("highlights", match_id=match_id)
+
+@app.get("/api/sportsrc/last_matches/{match_id}")
+async def sportsrc_last_matches(match_id: str):
+    return await fetch_sportsrc_data("last_matches", match_id=match_id)
 
 
 @app.get("/download/tv")
