@@ -137,10 +137,18 @@ async def lifespan(app: FastAPI):
     # Seed initial AppVersion if missing
     if db.query(AppVersion).count() == 0:
         db.add_all([
-            AppVersion(platform="tv", version_code=2, version_name="1.1", release_notes="In-app self-update checker added."),
+            AppVersion(platform="tv", version_code=3, version_name="1.2", release_notes="Proxy stream updates for Playback."),
             AppVersion(platform="mobile", version_code=1, version_name="1.0", release_notes="Initial release.")
         ])
         db.commit()
+    else:
+        # Auto-upgrade existing tv version if it's outdated
+        tv_version = db.query(AppVersion).filter_by(platform="tv").first()
+        if tv_version and tv_version.version_code < 3:
+            tv_version.version_code = 3
+            tv_version.version_name = "1.2"
+            tv_version.release_notes = "Proxy stream updates for Playback."
+            db.commit()
 
     db.close()
     
@@ -669,10 +677,10 @@ def api_version(request: Request, platform: str = "tv", db: Session = Depends(ge
     apk_filename = "tv.apk" if platform == "tv" else "mobile.apk"
     if not version:
         return {
-            "version_code": 2,
-            "version_name": "1.1",
+            "version_code": 3,
+            "version_name": "1.2",
             "apk_url": f"{base_url}apks/{apk_filename}",
-            "release_notes": "In-app self-update checker added."
+            "release_notes": "Proxy stream updates for Playback."
         }
     return {
         "version_code": version.version_code,
