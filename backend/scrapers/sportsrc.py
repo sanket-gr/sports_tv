@@ -12,10 +12,12 @@ BASE_URL = "https://streamed.pk/"
 
 async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None, extra_params: Optional[Dict[str, Any]] = None) -> Any:
     if endpoint_type == "matches":
-        # Fetch from streamed.pk/api/matches/live
+        # Fetch from streamed.pk/api/matches/all
         try:
+            import time
+            current_time_ms = int(time.time() * 1000)
             async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
-                response = await client.get(f"{BASE_URL}api/matches/live")
+                response = await client.get(f"{BASE_URL}api/matches/all")
                 if response.status_code == 200:
                     matches = response.json()
                     # Map to the format the TV app expects: id, title, status, sport, date
@@ -36,12 +38,15 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
                             elif away_badge:
                                 thumb = f"{BASE_URL}api/images/badge/{away_badge}.webp"
                                 
+                        match_date = m.get("date", 0)
+                        status = "inprogress" if match_date <= current_time_ms else "upcoming"
+                        
                         mapped_matches.append({
                             "id": m.get("id", ""),
                             "title": m.get("title", ""),
-                            "status": "inprogress",
+                            "status": status,
                             "sport": m.get("category", "football"),
-                            "date": str(m.get("date", "")),
+                            "date": str(match_date),
                             "thumbnail": thumb
                         })
                     return mapped_matches
@@ -50,10 +55,10 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
             return []
 
     elif endpoint_type == "detail" and match_id:
-        # 1. Fetch live matches to find this match's sources
+        # 1. Fetch all matches to find this match's sources
         try:
             async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
-                response = await client.get(f"{BASE_URL}api/matches/live")
+                response = await client.get(f"{BASE_URL}api/matches/all")
                 if response.status_code != 200:
                     return {"id": match_id, "title": "Error", "hls_url": ""}
                 

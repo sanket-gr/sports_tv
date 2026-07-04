@@ -43,6 +43,7 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
     private lateinit var stream: StreamItem
     var onFavoritesChangedListener: (() -> Unit)? = null
     private var selectedTab = "lineups"
+    private var currentStreams: List<SportSrcStream>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,8 +100,14 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
 
         // Play action
         binding.btnDetailWatch.setOnClickListener {
-            PlaybackActivity.start(requireContext(), stream)
-            dismiss()
+            val streams = currentStreams
+            if (stream.hlsUrl.startsWith("sportsrc://") && !streams.isNullOrEmpty()) {
+                val targetStream = streams.find { it.hd } ?: streams.first()
+                playSelectedServer(targetStream)
+            } else {
+                PlaybackActivity.start(requireContext(), stream)
+                dismiss()
+            }
         }
 
         // Setup Stream Servers
@@ -138,6 +145,7 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
                 }
                 
                 val streams = detail.streams
+                currentStreams = streams
                 if (streams.isNullOrEmpty()) {
                     binding.tvServersHint.text = "No stream servers available yet."
                     return@launch

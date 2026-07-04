@@ -95,26 +95,47 @@ class MainFragment : BrowseSupportFragment() {
                     ApiClient.service.getSportSrcMatches().map { match ->
                         val encodedTitle = java.net.URLEncoder.encode(match.title, "UTF-8")
                         val thumb = if (!match.thumbnail.isNullOrBlank()) match.thumbnail else "https://placehold.co/400x225/1e293b/14b8a6.png?text=$encodedTitle"
+                        // Parse date and calculate time remaining if upcoming
+                        var subtitle = match.title
+                        var isLive = match.status != "upcoming"
+                        if (!isLive && match.date.isNotBlank()) {
+                            try {
+                                val matchTime = match.date.toLong()
+                                val diff = matchTime - System.currentTimeMillis()
+                                if (diff > 0) {
+                                    val hours = diff / (1000 * 60 * 60)
+                                    val minutes = (diff / (1000 * 60)) % 60
+                                    subtitle = if (hours > 0) "Starts in ${hours}h ${minutes}m" else "Starts in ${minutes}m"
+                                } else {
+                                    isLive = true
+                                }
+                            } catch (e: Exception) { }
+                        }
+                        
+                        val sportCap = match.sport.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                        val catName = if (isLive) "🏆 Live $sportCap" else "📅 Upcoming $sportCap"
+                        
                         StreamItem(
                             id = match.id.hashCode(),
                             categoryId = -1,
-                            categoryName = "Live Matches",
-                            categoryIcon = "🏆",
+                            categoryName = catName,
+                            categoryIcon = if (isLive) "🔴" else "📅",
                             title = match.title,
-                            participants = match.title,
+                            participants = subtitle,
                             sport = match.sport,
                             hlsUrl = "sportsrc://${match.id}",
                             thumbnailUrl = thumb,
-                            isLive = true
+                            isLive = isLive
                         )
                     }
                 } catch (e: Exception) {
                     emptyList()
                 }
 
-                // Separate Live vs Upcoming
-                val liveStreams = streams.filter { it.isLive }
-                val upcomingStreams = streams.filter { !it.isLive }
+                // Separate Live vs Upcoming and add SportSRC streams
+                val combinedStreams = streams + sportSrcStreams
+                val liveStreams = combinedStreams.filter { it.isLive }
+                val upcomingStreams = combinedStreams.filter { !it.isLive }
                 
                 // Extract favorites
                 val favoriteStreams = streams.filter { favs.contains(it.id.toString()) }
@@ -129,14 +150,6 @@ class MainFragment : BrowseSupportFragment() {
                     rowsAdapter.add(ListRow(HeaderItem("⭐ Favorites"), listRowAdapter))
                 }
 
-                // 1.5. Live Matches Row
-                if (sportSrcStreams.isNotEmpty()) {
-                    val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
-                    val listRowAdapter = ArrayObjectAdapter(cardPresenter)
-                    sportSrcStreams.forEach { listRowAdapter.add(it) }
-                    rowsAdapter.add(ListRow(HeaderItem("🏆 Live Matches"), listRowAdapter))
-                }
-
                 // 2. Live Categories
                 val grouped = liveStreams.groupBy { it.categoryName }
                 grouped.forEach { (categoryName, categoryStreams) ->
@@ -148,12 +161,15 @@ class MainFragment : BrowseSupportFragment() {
                     rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
                 
-                // 3. Upcoming Streams
-                if (upcomingStreams.isNotEmpty()) {
+                // 3. Upcoming Categories
+                val upcomingGrouped = upcomingStreams.groupBy { it.categoryName }
+                upcomingGrouped.forEach { (categoryName, categoryStreams) ->
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
-                    upcomingStreams.forEach { listRowAdapter.add(it) }
-                    rowsAdapter.add(ListRow(HeaderItem("📅 Upcoming / Offline"), listRowAdapter))
+                    categoryStreams.forEach { listRowAdapter.add(it) }
+
+                    val headerItem = HeaderItem(if (categoryName.isBlank()) "📅 Upcoming / Offline" else categoryName)
+                    rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
 
                 // 4. Update Check Row

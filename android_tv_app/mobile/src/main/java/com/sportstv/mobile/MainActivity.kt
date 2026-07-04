@@ -111,17 +111,37 @@ class MainActivity : AppCompatActivity() {
                         ApiClient.service.getSportSrcMatches().map { match ->
                             val encodedTitle = java.net.URLEncoder.encode(match.title, "UTF-8")
                             val thumb = if (!match.thumbnail.isNullOrBlank()) match.thumbnail else "https://placehold.co/400x225/1e293b/14b8a6.png?text=$encodedTitle"
+                            // Parse date and calculate time remaining if upcoming
+                            var subtitle = match.title
+                            var isLive = match.status != "upcoming"
+                            if (!isLive && match.date.isNotBlank()) {
+                                try {
+                                    val matchTime = match.date.toLong()
+                                    val diff = matchTime - System.currentTimeMillis()
+                                    if (diff > 0) {
+                                        val hours = diff / (1000 * 60 * 60)
+                                        val minutes = (diff / (1000 * 60)) % 60
+                                        subtitle = if (hours > 0) "Starts in ${hours}h ${minutes}m" else "Starts in ${minutes}m"
+                                    } else {
+                                        isLive = true
+                                    }
+                                } catch (e: Exception) { }
+                            }
+                            
+                            val sportCap = match.sport.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                            val catName = if (isLive) "🏆 Live $sportCap" else "📅 Upcoming $sportCap"
+                            
                             StreamItem(
                                 id = match.id.hashCode(),
                                 categoryId = -1,
-                                categoryName = "Live Matches",
-                                categoryIcon = "🏆",
+                                categoryName = catName,
+                                categoryIcon = if (isLive) "🔴" else "📅",
                                 title = match.title,
-                                participants = match.title,
+                                participants = subtitle,
                                 sport = match.sport,
                                 hlsUrl = "sportsrc://${match.id}",
                                 thumbnailUrl = thumb,
-                                isLive = true
+                                isLive = isLive
                             )
                         }
                     }
