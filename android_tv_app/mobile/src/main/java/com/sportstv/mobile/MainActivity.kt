@@ -110,6 +110,7 @@ class MainActivity : AppCompatActivity() {
                     withContext(Dispatchers.IO) {
                         ApiClient.service.getSportSrcMatches().map { match ->
                             val encodedTitle = java.net.URLEncoder.encode(match.title, "UTF-8")
+                            val thumb = if (!match.thumbnail.isNullOrBlank()) match.thumbnail else "https://placehold.co/400x225/1e293b/14b8a6.png?text=$encodedTitle"
                             StreamItem(
                                 id = match.id.hashCode(),
                                 categoryId = -1,
@@ -119,7 +120,7 @@ class MainActivity : AppCompatActivity() {
                                 participants = match.title,
                                 sport = match.sport,
                                 hlsUrl = "sportsrc://${match.id}",
-                                thumbnailUrl = "https://placehold.co/400x225/1e293b/14b8a6.png?text=$encodedTitle",
+                                thumbnailUrl = thumb,
                                 isLive = true
                             )
                         }

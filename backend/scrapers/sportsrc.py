@@ -21,12 +21,28 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
                     # Map to the format the TV app expects: id, title, status, sport, date
                     mapped_matches = []
                     for m in matches:
+                        poster = m.get("poster")
+                        teams = m.get("teams", {})
+                        thumb = ""
+                        if poster:
+                            thumb = f"{BASE_URL}api/images/proxy/{poster}.webp"
+                        elif teams and teams.get("home") and teams.get("away"):
+                            home_badge = teams["home"].get("badge")
+                            away_badge = teams["away"].get("badge")
+                            if home_badge and away_badge:
+                                thumb = f"{BASE_URL}api/images/poster/{home_badge}/{away_badge}.webp"
+                            elif home_badge:
+                                thumb = f"{BASE_URL}api/images/badge/{home_badge}.webp"
+                            elif away_badge:
+                                thumb = f"{BASE_URL}api/images/badge/{away_badge}.webp"
+                                
                         mapped_matches.append({
                             "id": m.get("id", ""),
                             "title": m.get("title", ""),
                             "status": "inprogress",
                             "sport": m.get("category", "football"),
-                            "date": str(m.get("date", ""))
+                            "date": str(m.get("date", "")),
+                            "thumbnail": thumb
                         })
                     return mapped_matches
         except Exception as e:
@@ -128,9 +144,11 @@ async def extract_hls_from_embed(embed_url: str) -> str:
                 
             # Wait for requests to settle or HLS to be found
             for _ in range(8):
-                if captured:
-                    break
                 await asyncio.sleep(1)
+                if any("master" in u.lower() or "index" in u.lower() for u in captured):
+                    break
+                if len(captured) >= 3:
+                    break
                 
             await context.close()
             await browser.close()
@@ -138,8 +156,13 @@ async def extract_hls_from_embed(embed_url: str) -> str:
         logger.error(f"Playwright HLS extraction failed: {e}")
         
     if captured:
-        logger.info(f"Successfully extracted HLS URL: {captured[0]}")
-        return captured[0]
+        best_url = captured[0]
+        for url in captured:
+            if "master" in url.lower() or "index" in url.lower():
+                best_url = url
+                break
+        logger.info(f"Successfully extracted HLS URL: {best_url}")
+        return best_url
         
     logger.warning(f"Failed to extract HLS from {embed_url}")
     return ""

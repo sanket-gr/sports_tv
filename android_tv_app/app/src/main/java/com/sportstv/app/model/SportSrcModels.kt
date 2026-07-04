@@ -83,7 +83,8 @@ data class SportSrcMatch(
     @SerializedName("title")  val title: String,
     @SerializedName("status") val status: String,
     @SerializedName("sport")  val sport: String,
-    @SerializedName("date")   val date: String
+    @SerializedName("date")   val date: String,
+    @SerializedName("thumbnail") val thumbnail: String?
 )
 
 data class SportSrcStream(
