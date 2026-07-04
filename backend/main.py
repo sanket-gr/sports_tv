@@ -137,18 +137,25 @@ async def lifespan(app: FastAPI):
     # Seed initial AppVersion if missing
     if db.query(AppVersion).count() == 0:
         db.add_all([
-            AppVersion(platform="tv", version_code=3, version_name="1.2", release_notes="Proxy stream updates for Playback."),
-            AppVersion(platform="mobile", version_code=1, version_name="1.0", release_notes="Initial release.")
+            AppVersion(platform="tv", version_code=4, version_name="1.3", release_notes="Added upcoming streams and fixed bugs."),
+            AppVersion(platform="mobile", version_code=2, version_name="1.1", release_notes="Fixed Watch Live crash and added upcoming streams.")
         ])
         db.commit()
     else:
         # Auto-upgrade existing tv version if it's outdated
         tv_version = db.query(AppVersion).filter_by(platform="tv").first()
-        if tv_version and tv_version.version_code < 3:
-            tv_version.version_code = 3
-            tv_version.version_name = "1.2"
-            tv_version.release_notes = "Proxy stream updates for Playback."
-            db.commit()
+        if tv_version and tv_version.version_code < 4:
+            tv_version.version_code = 4
+            tv_version.version_name = "1.3"
+            tv_version.release_notes = "Added upcoming streams and fixed bugs."
+            
+        mobile_version = db.query(AppVersion).filter_by(platform="mobile").first()
+        if mobile_version and mobile_version.version_code < 2:
+            mobile_version.version_code = 2
+            mobile_version.version_name = "1.1"
+            mobile_version.release_notes = "Fixed Watch Live crash and added upcoming streams."
+            
+        db.commit()
 
     db.close()
     
