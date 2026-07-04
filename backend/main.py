@@ -228,21 +228,11 @@ def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(secu
 # ===========================================================================
 
 @app.get("/", response_class=HTMLResponse)
-def index_page(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    categories = db.query(Category).order_by(Category.sort_order).all()
-    streams    = db.query(Stream).filter(Stream.is_live == True).order_by(Stream.created_at.desc()).all()
-    sources    = db.query(SourceConfig).filter(SourceConfig.is_active == True).all()
+def index_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={
-            "categories": categories,
-            "streams": streams,
-            "sources": sources,
-        },
+        context={},
     )
 
 # ===========================================================================

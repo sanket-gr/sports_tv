@@ -1243,6 +1243,8 @@
               </div>
 
             </div>
+            
+            <div id="servers-container" style="margin-top: 15px; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.2);"></div>
 
             <!-- Details Block -->
             <div class="playing-details">
@@ -1312,21 +1314,18 @@
     <span>📋</span>
     <span id="toast-text">Toast message</span>
   </div>
-
   <script>
     // State management
-    let allStreams = [];
+    let allMatches = [];
     let allCategories = [];
     let activeCategoryFilter = 'all';
-    let activeProviderFilter = 'all';
     let searchQuery = '';
     let currentStream = null;
     let hls = null;
     let currentDashboardTab = 'live';
-    let upcomingMatches = [];
 
     // Dashboard Tab Switching logic
-    async function switchDashboardTab(tab) {
+    function switchDashboardTab(tab) {
       currentDashboardTab = tab;
       const tabLive = document.getElementById('tab-live-broadcasts');
       const tabUpcoming = document.getElementById('tab-upcoming-matches');
@@ -1336,67 +1335,13 @@
         tabLive.style.borderBottom = '2px solid var(--accent-primary)';
         tabUpcoming.style.color = 'var(--text-muted)';
         tabUpcoming.style.borderBottom = 'none';
-        renderStreamsGrid();
       } else {
         tabUpcoming.style.color = 'var(--accent-primary)';
         tabUpcoming.style.borderBottom = '2px solid var(--accent-primary)';
         tabLive.style.color = 'var(--text-muted)';
         tabLive.style.borderBottom = 'none';
-        
-        // Load upcoming matches
-        const grid = document.getElementById('streams-grid');
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Loading upcoming matches...</div>';
-        try {
-          const res = await fetch('/api/sportsrc/matches?status=upcoming');
-          if (res.ok) {
-            upcomingMatches = await res.json();
-            renderUpcomingMatches();
-          } else {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Failed to load upcoming matches.</div>';
-          }
-        } catch (e) {
-          grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Failed to load upcoming matches.</div>';
-        }
       }
-    }
-
-    // Render upcoming matches list
-    function renderUpcomingMatches() {
-      const grid = document.getElementById('streams-grid');
-      grid.innerHTML = '';
-      if (upcomingMatches.length === 0) {
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No upcoming matches today.</div>';
-        return;
-      }
-
-      upcomingMatches.forEach(match => {
-        const card = document.createElement('div');
-        card.className = 'stream-card';
-        card.onclick = () => openUpcomingMatch(match);
-        
-        card.innerHTML = `
-          <div class="stream-thumbnail">
-            <div class="stream-fallback-thumb" style="display:flex;">
-              <span>⚽</span>
-            </div>
-            <div class="stream-badge-container">
-              <span class="live-badge" style="background: rgba(245, 158, 11, 0.9);">
-                📅 UPCOMING
-              </span>
-              <span class="source-badge">SportSRC</span>
-              <span class="sport-badge">${match.sport}</span>
-            </div>
-          </div>
-          <div class="stream-card-body">
-            <h3 class="stream-card-title">${match.title}</h3>
-            <div class="stream-card-meta">
-              <span>Date: ${match.date}</span>
-              <span style="color: var(--accent-primary); font-weight: 700;">Pre-Match Center →</span>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
+      renderStreamsGrid();
     }
 
     // Analytics state
@@ -1422,21 +1367,15 @@
     // Fetch categories and streams on load
     async function initApp() {
       renderSkeletons();
-      await fetchCategories();
-      await fetchStreams();
-      
-      // Initial counts
-      updateSidebarCounts();
-
-      // Poll streams every 30 seconds to keep live list fresh
-      setInterval(fetchStreams, 30000);
+      await fetchMatches();
+      // Poll streams every 60 seconds to keep live list fresh
+      setInterval(fetchMatches, 60000);
     }
 
     // Reset filters and return to home dashboard
     function goHome() {
       closePlayer();
       filterByCategory('all');
-      filterByProvider('all');
       const searchInput = document.getElementById('search-input');
       if (searchInput) searchInput.value = '';
       searchQuery = '';
@@ -1462,51 +1401,40 @@
       grid.innerHTML = html;
     }
 
-    async function fetchCategories() {
+    async function fetchMatches() {
       try {
-        const response = await fetch('/api/categories');
+        const response = await fetch('/api/sportsrc/matches');
         if (response.ok) {
-          allCategories = await response.json();
-          renderCategoriesSidebar();
-        }
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-      }
-    }
-
-    async function fetchStreams() {
-      try {
-        const response = await fetch('/api/streams?live_only=true');
-        if (response.ok) {
-          allStreams = await response.json();
+          allMatches = await response.json();
+          extractCategories();
           renderStreamsGrid();
           updateSidebarCounts();
-          renderProvidersSidebar();
-          
-          // If a stream is playing, update the right channels list
-          if (currentStream) {
-            renderOtherChannels();
-          }
         }
       } catch (err) {
-        console.error('Error fetching streams:', err);
+        console.error('Error fetching matches:', err);
       }
     }
-
-    // Detect provider name based on source URL
-    function getProviderName(url) {
-      if (!url) return 'Direct Link';
-      const lowUrl = url.toLowerCase();
-      if (lowUrl.includes('sportsurge')) return 'Sportsurge';
-      if (lowUrl.includes('jokertv') || lowUrl.includes('joker')) return 'JokerTV';
-      if (lowUrl.includes('watchmmafull') || lowUrl.includes('mmafull')) return 'WatchMMAFull';
-      if (lowUrl.includes('vidplayer')) return 'Vidplayer';
-      try {
-        const domain = new URL(url).hostname;
-        return domain.replace('www.', '');
-      } catch(e) {
-        return 'Web Stream';
-      }
+    
+    function extractCategories() {
+      const sports = new Set();
+      allMatches.forEach(m => sports.add(m.sport));
+      allCategories = Array.from(sports).map(sport => {
+        let icon = '🏆';
+        if(sport.toLowerCase() === 'football') icon = '⚽';
+        else if(sport.toLowerCase() === 'basketball') icon = '🏀';
+        else if(sport.toLowerCase() === 'tennis') icon = '🎾';
+        else if(sport.toLowerCase().includes('mma')) icon = '🥊';
+        else if(sport.toLowerCase() === 'cricket') icon = '🏏';
+        else if(sport.toLowerCase() === 'baseball') icon = '⚾';
+        else if(sport.toLowerCase() === 'motorsport') icon = '🏎️';
+        
+        return {
+          id: sport,
+          name: sport.charAt(0).toUpperCase() + sport.slice(1),
+          icon: icon
+        };
+      });
+      renderCategoriesSidebar();
     }
 
     // Render Categories in Sidebar
@@ -1533,64 +1461,20 @@
       });
     }
 
-    // Render Providers dynamically based on stream list
-    function renderProvidersSidebar() {
-      const list = document.getElementById('providers-list');
-      // Keep "All Sources" item
-      const allItem = list.querySelector('[data-filter="all-providers"]');
-      list.innerHTML = '';
-      list.appendChild(allItem);
-
-      // Collect unique providers from active streams
-      const providers = new Set();
-      allStreams.forEach(stream => {
-        providers.add(getProviderName(stream.source_url));
-      });
-
-      providers.forEach(prov => {
-        const li = document.createElement('li');
-        li.className = 'nav-item';
-        li.setAttribute('data-provider', prov);
-        li.onclick = () => filterByProvider(prov);
-        li.innerHTML = `
-          <div class="icon-wrap">
-            <span>📡</span>
-            <span>${prov}</span>
-          </div>
-          <span class="count" id="count-prov-${prov}">0</span>
-        `;
-        list.appendChild(li);
-      });
-    }
-
-    // Update Counts next to categories and providers
+    // Update Counts next to categories
     function updateSidebarCounts() {
-      // Update overall stream counts
-      document.getElementById('count-all-providers').textContent = allStreams.length;
-      document.getElementById('count-all-categories').textContent = allStreams.length;
-
       // Category counts
       allCategories.forEach(cat => {
         const countSpan = document.getElementById(`count-cat-${cat.id}`);
         if (countSpan) {
-          const count = allStreams.filter(s => s.category_id === cat.id).length;
+          const count = allMatches.filter(s => s.sport === cat.id).length;
           countSpan.textContent = count;
         }
       });
-
-      // Provider counts
-      const providerCounts = {};
-      allStreams.forEach(stream => {
-        const prov = getProviderName(stream.source_url);
-        providerCounts[prov] = (providerCounts[prov] || 0) + 1;
-      });
-
-      Object.keys(providerCounts).forEach(prov => {
-        const countSpan = document.getElementById(`count-prov-${prov}`);
-        if (countSpan) {
-          countSpan.textContent = providerCounts[prov];
-        }
-      });
+      const allSpan = document.getElementById(`count-all-categories`);
+      if (allSpan) {
+          allSpan.textContent = allMatches.length;
+      }
     }
 
     // Filter by Category
@@ -1612,25 +1496,6 @@
       renderStreamsGrid();
     }
 
-    // Filter by Provider
-    function filterByProvider(provider) {
-      activeProviderFilter = provider;
-
-      // Update UI active state
-      const items = document.querySelectorAll('#providers-list .nav-item');
-      items.forEach(item => {
-        if (provider === 'all' && item.getAttribute('data-filter') === 'all-providers') {
-          item.classList.add('active');
-        } else if (item.getAttribute('data-provider') === provider) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-
-      renderStreamsGrid();
-    }
-
     // Search bar functionality
     function handleSearch(val) {
       searchQuery = val.toLowerCase().trim();
@@ -1643,78 +1508,72 @@
     // Core Filtering Engine & Card Rendering
     function renderStreamsGrid() {
       const grid = document.getElementById('streams-grid');
+      grid.innerHTML = '';
       
-      // Apply filters
-      const filtered = allStreams.filter(stream => {
-        const provName = getProviderName(stream.source_url);
+      const filtered = allMatches.filter(match => {
+        // filter by tab
+        if (currentDashboardTab === 'live' && match.status !== 'inprogress') return false;
+        if (currentDashboardTab === 'upcoming' && match.status !== 'upcoming') return false;
         
-        // Search Filter (if active, overrides category/provider filters for global search)
+        // filter by category
+        if (activeCategoryFilter !== 'all' && match.sport !== activeCategoryFilter) return false;
+        
+        // filter by search
         if (searchQuery) {
-          const matchTitle = (stream.title || '').toLowerCase().includes(searchQuery);
-          const matchParticipants = (stream.participants || '').toLowerCase().includes(searchQuery);
-          const matchSport = (stream.sport || '').toLowerCase().includes(searchQuery);
-          return matchTitle || matchParticipants || matchSport;
-        }
-
-        // Category Filter
-        if (activeCategoryFilter !== 'all' && stream.category_id !== activeCategoryFilter) {
-          return false;
+          const matchTitle = (match.title || '').toLowerCase().includes(searchQuery);
+          const matchSport = (match.sport || '').toLowerCase().includes(searchQuery);
+          return matchTitle || matchSport;
         }
         
-        // Provider Filter
-        if (activeProviderFilter !== 'all' && provName !== activeProviderFilter) {
-          return false;
-        }
-
         return true;
       });
 
       if (filtered.length === 0) {
-        grid.innerHTML = `
-          <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-dark);">
-            <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-            <h3 style="color: var(--text-muted); font-size: 18px; margin-bottom: 8px;">No Live Broadcasts Found</h3>
-            <p style="font-size: 14px;">Try modifying your search or switching categories.</p>
-          </div>
-        `;
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No ${currentDashboardTab} streams found.</div>`;
         return;
       }
-
-      grid.innerHTML = '';
-      filtered.forEach(stream => {
-        const provName = getProviderName(stream.source_url);
+      
+      filtered.forEach(match => {
         const card = document.createElement('div');
         card.className = 'stream-card';
-        card.onclick = () => openStream(stream);
-
-        // Thumbnail URL or nice sport-specific icon fallback
-        let thumbHtml = '';
-        if (stream.thumbnail_url) {
-          thumbHtml = `<img src="${stream.thumbnail_url}" alt="${stream.title}" onerror="this.style.display='none'; document.getElementById('fallback-thumb-${stream.id}').style.display='flex'">`;
+        card.onclick = () => openStream(match);
+        
+        const isUpcoming = match.status === 'upcoming';
+        const badgeColor = isUpcoming ? 'rgba(245, 158, 11, 0.9)' : 'var(--accent-primary)';
+        const badgeText = isUpcoming ? '📅 UPCOMING' : '<span class="live-badge-dot"></span> LIVE';
+        
+        let timeRemaining = '';
+        if (isUpcoming && match.date) {
+            const timeDiff = parseInt(match.date) - Date.now();
+            if(timeDiff > 0) {
+                const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                const mins = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                timeRemaining = ` | Starts in ${hours}h ${mins}m`;
+            }
         }
-        
-        const fallbackIcon = stream.category_icon || '⚽';
-        
+
+        let icon = '🏆';
+        if(match.sport.toLowerCase() === 'football') icon = '⚽';
+        else if(match.sport.toLowerCase() === 'basketball') icon = '🏀';
+
         card.innerHTML = `
           <div class="stream-thumbnail">
-            ${thumbHtml}
-            <div class="stream-fallback-thumb" id="fallback-thumb-${stream.id}" style="${stream.thumbnail_url ? 'display:none;' : 'display:flex;'}">
-              <span>${fallbackIcon}</span>
+            ${match.thumbnail ? `<img src="${match.thumbnail}" alt="${match.title}" onerror="this.style.display='none'; document.getElementById('fallback-thumb-${match.id}').style.display='flex'">` : ''}
+            <div class="stream-fallback-thumb" id="fallback-thumb-${match.id}" style="${match.thumbnail ? 'display:none;' : 'display:flex;'}">
+              <span>${icon}</span>
             </div>
             <div class="stream-badge-container">
-              <span class="live-badge">
-                <span class="live-badge-dot"></span>
-                Live
+              <span class="live-badge" style="background: ${badgeColor};">
+                ${badgeText}
               </span>
-              <span class="source-badge">${provName}</span>
-              <span class="sport-badge">${stream.category_name}</span>
+              <span class="source-badge">SportSRC</span>
+              <span class="sport-badge">${match.sport.toUpperCase()}</span>
             </div>
           </div>
           <div class="stream-card-body">
-            <h3 class="stream-card-title">${stream.title}</h3>
+            <h3 class="stream-card-title">${match.title}</h3>
             <div class="stream-card-meta">
-              <span class="stream-participants">${stream.participants || 'Main Event'}</span>
-              <span>Watch Now →</span>
+              <span>${new Date(parseInt(match.date)).toLocaleString()}${timeRemaining}</span>
             </div>
           </div>
         `;
@@ -1722,95 +1581,99 @@
       });
     }
 
-    // Helper to generate the proxy URL for a stream
-    function getProxyUrl(stream) {
-      const hlsUrl = stream.hls_url_raw || stream.hls_url;
-      if (!hlsUrl) return '';
-      
-      // If it's already a proxied URL, return it
-      if (hlsUrl.includes('/api/proxy')) {
-        return hlsUrl;
-      }
-      
-      const iframeUrl = stream.iframe_url || '';
-      let referer = 'https://www.google.com/';
-      try {
-        if (iframeUrl) {
-          const parsed = new URL(iframeUrl);
-          referer = `${parsed.protocol}//${parsed.host}/`;
-        }
-      } catch(e) {}
-      
-      const baseUrl = window.location.origin;
-      return `${baseUrl}/api/proxy?url=${encodeURIComponent(hlsUrl)}&referer=${encodeURIComponent(referer)}`;
-    }
-
     // Playback and Cinema mode opening
-    function openStream(stream) {
-      currentStream = stream;
+    async function openStream(match) {
+      currentStream = match;
       
       // Hide dashboard, show cinema player
       document.getElementById('dashboard-view').style.display = 'none';
       document.getElementById('cinema-view').style.display = 'block';
 
       // Update Player details
-      document.getElementById('playing-sport-badge').textContent = stream.category_name;
-      document.getElementById('playing-source-badge').textContent = getProviderName(stream.source_url);
-      document.getElementById('playing-title-text').textContent = stream.title;
-      document.getElementById('playing-participants').textContent = stream.participants || 'Main Live Event';
-      
-      // Clean host extraction for visual layout
-      let domain = 'Direct CDN';
-      try {
-        if (stream.source_url) domain = new URL(stream.source_url).hostname;
-      } catch(e) {}
-      document.getElementById('playing-origin-url').textContent = `Source: ${domain}`;
+      document.getElementById('playing-sport-badge').textContent = match.sport.toUpperCase();
+      document.getElementById('playing-source-badge').textContent = 'SportSRC';
+      document.getElementById('playing-title-text').textContent = match.title;
+      document.getElementById('playing-participants').textContent = 'Match Center';
+      document.getElementById('playing-origin-url').textContent = `Status: ${match.status.toUpperCase()}`;
 
       // Reset watched seconds
       secondsWatched = 0;
       startWatchTimeTracker();
 
-      // Ensure placeholder overlay is hidden for live streams
-      document.getElementById('upcoming-placeholder-overlay').style.display = 'none';
-
-      // Launch HLS playback using proxy
-      const proxyUrl = getProxyUrl(stream);
-      initHls(proxyUrl);
-      renderOtherChannels();
+      if (match.status === 'upcoming') {
+          // Show placeholder overlay and hide spinner/controls
+          document.getElementById('upcoming-placeholder-overlay').style.display = 'flex';
+          loader.style.display = 'none';
+          document.getElementById('servers-container').innerHTML = ''; // Clear servers
+      } else {
+          // Live match: show loader and fetch servers
+          document.getElementById('upcoming-placeholder-overlay').style.display = 'none';
+          loader.style.display = 'flex';
+          document.getElementById('servers-container').innerHTML = '';
+          
+          try {
+              const res = await fetch(`/api/sportsrc/detail/${match.id}`);
+              const data = await res.json();
+              
+              if (data.hls_url) {
+                  initHls(data.hls_url);
+              } else {
+                  showToast('Failed to resolve stream link.');
+                  loader.style.display = 'none';
+              }
+              
+              // Render Server selection buttons if multiple streams
+              renderServers(data.streams);
+          } catch(e) {
+              showToast('Error loading stream details.');
+              loader.style.display = 'none';
+          }
+      }
 
       // Show and initialize Match Center
       document.getElementById('web-match-center').style.display = 'block';
       loadWebTab('lineups');
+      renderOtherChannels();
     }
 
-    // Pre-match detail page for upcoming matches
-    function openUpcomingMatch(match) {
-      currentStream = {
-        id: match.id,
-        title: match.title,
-        category_name: match.sport,
-        source_url: 'https://api.sportsrc.org/v2/',
-        participants: match.title
-      };
+    async function changeServer(embedUrl) {
+      loader.style.display = 'flex';
+      try {
+        const res = await fetch(`/api/sportsrc/resolve?embed_url=${encodeURIComponent(embedUrl)}`);
+        const data = await res.json();
+        if (data.hls_url) {
+            initHls(data.hls_url);
+        } else {
+            showToast('Failed to resolve server link.');
+            loader.style.display = 'none';
+        }
+      } catch(e) {
+        showToast('Error changing server.');
+        loader.style.display = 'none';
+      }
+    }
+    
+    function renderServers(streams) {
+      const container = document.getElementById('servers-container');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!streams || streams.length <= 1) return;
       
-      // Hide dashboard, show cinema player
-      document.getElementById('dashboard-view').style.display = 'none';
-      document.getElementById('cinema-view').style.display = 'block';
-
-      // Update Player details
-      document.getElementById('playing-sport-badge').textContent = match.sport;
-      document.getElementById('playing-source-badge').textContent = 'SportSRC';
-      document.getElementById('playing-title-text').textContent = match.title;
-      document.getElementById('playing-participants').textContent = match.title;
-      document.getElementById('playing-origin-url').textContent = `Status: Upcoming (${match.date})`;
-
-      // Show placeholder overlay and hide spinner/controls
-      document.getElementById('upcoming-placeholder-overlay').style.display = 'flex';
-      loader.style.display = 'none';
-
-      // Show and initialize Match Center
-      document.getElementById('web-match-center').style.display = 'block';
-      loadWebTab('lineups');
+      const title = document.createElement('h4');
+      title.textContent = 'Alternative Servers:';
+      title.style.color = 'var(--text-muted)';
+      title.style.marginBottom = '10px';
+      container.appendChild(title);
+      
+      streams.forEach((stream, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-action';
+        btn.style.marginRight = '10px';
+        btn.style.marginBottom = '10px';
+        btn.textContent = `${stream.source} ${stream.hd ? 'HD' : ''} (Server ${idx+1})`;
+        btn.onclick = () => changeServer(stream.embedUrl);
+        container.appendChild(btn);
+      });
     }
 
     // SportSRC Web Match Center Tab Loading
@@ -1902,45 +1765,41 @@
     function renderOtherChannels() {
       const container = document.getElementById('channels-list-container');
       container.innerHTML = '';
-
-      let streamsToShow = allStreams.filter(s => s.id !== currentStream.id);
       
-      // Apply search filter if active
+      // Filter out current stream
+      let others = allMatches.filter(m => m.id !== currentStream?.id && m.status === 'inprogress');
+      
+      // If searching
       if (searchQuery) {
-        streamsToShow = streamsToShow.filter(stream => {
-          const matchTitle = (stream.title || '').toLowerCase().includes(searchQuery);
-          const matchParticipants = (stream.participants || '').toLowerCase().includes(searchQuery);
-          const matchSport = (stream.sport || '').toLowerCase().includes(searchQuery);
-          return matchTitle || matchParticipants || matchSport;
+        others = others.filter(m => {
+          const matchTitle = (m.title || '').toLowerCase().includes(searchQuery);
+          const matchSport = (m.sport || '').toLowerCase().includes(searchQuery);
+          return matchTitle || matchSport;
         });
       }
-      
-      // Limit to 10 items
-      streamsToShow = streamsToShow.slice(0, 10);
 
-      if (streamsToShow.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:32px 0; color:var(--text-dark); font-size:13px;">No matching streams live.</div>`;
+      if (others.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); padding:20px;">No other live channels found.</div>';
         return;
       }
 
-      streamsToShow.forEach(stream => {
-        const provName = getProviderName(stream.source_url);
+      others.forEach(match => {
         const item = document.createElement('div');
-        item.className = `channel-item ${stream.id === currentStream.id ? 'active' : ''}`;
-        item.onclick = () => openStream(stream);
+        item.className = 'channel-item';
+        item.onclick = () => openStream(match);
 
-        const icon = stream.category_icon || '⚽';
+        const icon = '🏆';
 
         item.innerHTML = `
           <div class="channel-thumb">
-            ${stream.thumbnail_url ? `<img src="${stream.thumbnail_url}" alt="" onerror="this.src=''">` : `<span style="font-size:20px;">${icon}</span>`}
+            ${match.thumbnail ? `<img src="${match.thumbnail}" alt="" onerror="this.src=''">` : `<span style="font-size:20px;">${icon}</span>`}
           </div>
           <div class="channel-details">
-            <h4 class="channel-title" title="${stream.title}">${stream.title}</h4>
+            <h4 class="channel-title" title="${match.title}">${match.title}</h4>
             <div class="channel-meta">
-              <span style="color:var(--accent-primary); font-weight:700;">${provName}</span>
-              <span>•</span>
-              <span>${stream.category_name}</span>
+              <span style="color:var(--accent-primary); font-weight:700;">SportSRC</span>
+              <span> </span>
+              <span>${match.sport.toUpperCase()}</span>
             </div>
           </div>
         `;
