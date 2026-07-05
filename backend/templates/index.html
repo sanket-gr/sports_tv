@@ -650,7 +650,7 @@
     .video-wrapper {
       position: relative;
       width: 100%;
-      aspect-ratio: 16/9;
+      padding-top: 56.25%; /* 16:9 Aspect Ratio Fallback */
       background: #000;
       border-radius: 20px;
       overflow: hidden;
@@ -662,9 +662,13 @@
     }
 
     video {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       object-fit: contain;
+      z-index: 1;
     }
 
     /* Custom Custom Controls Overlay */
@@ -681,7 +685,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
-      z-index: 2;
+      z-index: 10;
     }
     .video-wrapper:hover .player-controls,
     .video-wrapper.controls-active .player-controls {
@@ -829,7 +833,7 @@
       flex-direction: column;
       align-items: center;
       gap: 16px;
-      z-index: 1;
+      z-index: 5;
     }
     .spinner {
       width: 50px;
@@ -1181,7 +1185,7 @@
             <div class="video-wrapper" id="video-wrapper">
               
               <!-- HTML5 Video element -->
-              <video id="video-element" playsinline></video>
+              <video id="video-element" playsinline style="background: #000;"></video>
 
               <!-- Loading spinner -->
               <div class="player-loader" id="player-loader">
@@ -1189,7 +1193,7 @@
               </div>
 
               <!-- Match Starting Soon Placeholder Overlay -->
-              <div id="upcoming-placeholder-overlay" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background:#0f172a; text-align:center; padding: 20px; z-index:3;">
+              <div id="upcoming-placeholder-overlay" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background:#0f172a; text-align:center; padding: 20px; z-index:20;">
                 <div style="font-size:64px; margin-bottom:16px;">⏳</div>
                 <h2 style="font-size:24px; font-weight:800; color:white; margin-bottom:8px;">Match Starting Soon</h2>
                 <p style="font-size:14px; color:var(--text-muted); max-width:400px; line-height:1.5;">This broadcast is not live yet. Live streams will activate once the match kicks off. Explore pre-match lineups, odds, and predictions below.</p>
@@ -1588,6 +1592,7 @@
       // Hide dashboard, show cinema player
       document.getElementById('dashboard-view').style.display = 'none';
       document.getElementById('cinema-view').style.display = 'block';
+      window.scrollTo(0, 0);
 
       // Update Player details
       document.getElementById('playing-sport-badge').textContent = match.sport.toUpperCase();
