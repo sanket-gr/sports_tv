@@ -58,6 +58,10 @@ class MainActivity : AppCompatActivity() {
             }
             bottomSheet.show(supportFragmentManager, "stream_detail")
         }
+
+        binding.root.findViewById<View>(R.id.fab_refresh)?.setOnClickListener {
+            refreshCurrentView(forceNetworkRefresh = true)
+        }
         recyclerView.adapter = streamAdapter
 
         // Fetch streams from backend
@@ -169,10 +173,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshCurrentView() {
-        if (currentTabId == R.id.navigation_home) {
-            streamAdapter.notifyDataSetChanged()
-        } else if (currentTabId == R.id.navigation_favorites) {
+    private fun refreshCurrentView(forceNetworkRefresh: Boolean = false) {
+        if (forceNetworkRefresh) {
+            statusTextView.text = "Refreshing..."
+            statusTextView.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+            
+            lifecycleScope.launch {
+                try {
+                    val matches = withContext(Dispatchers.IO) {
+                        ApiClient.service.getSportSrcMatches()
+                    }
+                    
+                    val streams = matches.map { match ->
+                        StreamItem(
+                            id = match.id.hashCode(),
+                            categoryId = match.sport.hashCode(),
+                            categoryName = match.sport.replaceFirstChar { it.uppercase() },
+                            categoryIcon = "",
+                            title = match.title,
+                            participants = match.title,
+                            sport = match.sport,
+                            hlsUrl = "sportsrc://${match.id}",
+                            iframeUrl = "",
+                            cfDomain = "",
+                            thumbnailUrl = match.thumbnail,
+                            isLive = match.status == "inprogress"
+                        )
+                    }
+                    allStreams = streams
+                    updateViewForTab(currentTabId)
+                } catch (e: Exception) {
+                    statusTextView.text = "Failed to load streams: ${e.message}"
+                    statusTextView.visibility = View.VISIBLE
+                    recyclerView.visibility = View.GONE
+                }
+            }
+        } else {
+            updateViewForTab(currentTabId)
+        }
+    }
+
+    private fun updateViewForTab(tabId: Int) {
+        if (tabId == R.id.navigation_home) {
+            showHomeView()
+        } else if (tabId == R.id.navigation_favorites) {
             showFavoritesView()
         }
     }

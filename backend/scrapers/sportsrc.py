@@ -27,7 +27,10 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
                         teams = m.get("teams", {})
                         thumb = ""
                         if poster:
-                            thumb = f"{BASE_URL}api/images/proxy/{poster}.webp"
+                            if poster.startswith("/"):
+                                thumb = f"{BASE_URL.rstrip('/')}{poster}"
+                            else:
+                                thumb = f"{BASE_URL}api/images/proxy/{poster}.webp"
                         elif teams and teams.get("home") and teams.get("away"):
                             home_badge = teams["home"].get("badge")
                             away_badge = teams["away"].get("badge")

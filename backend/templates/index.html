@@ -1616,7 +1616,9 @@
               const data = await res.json();
               
               if (data.hls_url) {
-                  initHls(data.hls_url);
+                  const baseUrl = window.location.origin;
+                  const proxyUrl = `${baseUrl}/api/proxy?url=${encodeURIComponent(data.hls_url)}&referer=${encodeURIComponent(data.stream_url || 'https://www.google.com/')}`;
+                  initHls(proxyUrl);
               } else {
                   showToast('Failed to resolve stream link.');
                   loader.style.display = 'none';
@@ -1642,7 +1644,9 @@
         const res = await fetch(`/api/sportsrc/resolve?embed_url=${encodeURIComponent(embedUrl)}`);
         const data = await res.json();
         if (data.hls_url) {
-            initHls(data.hls_url);
+            const baseUrl = window.location.origin;
+            const proxyUrl = `${baseUrl}/api/proxy?url=${encodeURIComponent(data.hls_url)}&referer=${encodeURIComponent(embedUrl)}`;
+            initHls(proxyUrl);
         } else {
             showToast('Failed to resolve server link.');
             loader.style.display = 'none';

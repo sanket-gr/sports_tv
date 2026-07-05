@@ -62,6 +62,9 @@ class MainFragment : BrowseSupportFragment() {
                     Toast.makeText(requireContext(), "Checking for updates...", Toast.LENGTH_SHORT).show()
                     UpdateChecker.checkForUpdate(requireActivity(), showToastIfLatest = true)
                 }
+            } else if (stream.hlsUrl == "system://refresh") {
+                Toast.makeText(requireContext(), "Refreshing streams...", Toast.LENGTH_SHORT).show()
+                loadStreams()
             } else {
                 PlaybackActivity.start(requireContext(), stream)
             }
@@ -175,6 +178,20 @@ class MainFragment : BrowseSupportFragment() {
                 // 4. Update Check Row
                 val updateCardPresenter = CardPresenter(favs) { }
                 val updateRowAdapter = ArrayObjectAdapter(updateCardPresenter)
+                updateRowAdapter.add(
+                    StreamItem(
+                        id = 999998,
+                        categoryId = -2,
+                        categoryName = "System",
+                        categoryIcon = "🔄",
+                        title = "Refresh Streams",
+                        participants = "Reload the latest streams",
+                        sport = "System",
+                        hlsUrl = "system://refresh",
+                        thumbnailUrl = "",
+                        isLive = false
+                    )
+                )
                 updateRowAdapter.add(
                     StreamItem(
                         id = 999999,

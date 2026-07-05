@@ -100,10 +100,14 @@ class StreamDetailBottomSheet : BottomSheetDialogFragment() {
 
         // Play action
         binding.btnDetailWatch.setOnClickListener {
-            val streams = currentStreams
-            if (stream.hlsUrl.startsWith("sportsrc://") && !streams.isNullOrEmpty()) {
-                val targetStream = streams.find { it.hd } ?: streams.first()
-                playSelectedServer(targetStream)
+            if (stream.hlsUrl.startsWith("sportsrc://")) {
+                val streams = currentStreams
+                if (!streams.isNullOrEmpty()) {
+                    val targetStream = streams.find { it.hd } ?: streams.first()
+                    playSelectedServer(targetStream)
+                } else {
+                    binding.tvServersHint.text = "Still loading servers, please wait..."
+                }
             } else {
                 PlaybackActivity.start(requireContext(), stream)
                 dismiss()
