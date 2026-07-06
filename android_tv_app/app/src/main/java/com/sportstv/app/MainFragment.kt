@@ -151,7 +151,7 @@ class MainFragment : BrowseSupportFragment() {
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     listRowAdapter.add(topLive)
-                    rowsAdapter.add(ListRow(HeaderItem("dY\"\" Top Live Match"), listRowAdapter))
+                    rowsAdapter.add(ListRow(HeaderItem("🔥 Top Live Match"), listRowAdapter))
                 }
                 
                 // 2. Favorites Row
@@ -170,7 +170,7 @@ class MainFragment : BrowseSupportFragment() {
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     categoryStreams.forEach { listRowAdapter.add(it) }
 
-                    val headerItem = HeaderItem("dY?+ Live $sportName")
+                    val headerItem = HeaderItem("🔴 Live $sportName")
                     rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
                 
@@ -181,7 +181,7 @@ class MainFragment : BrowseSupportFragment() {
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     categoryStreams.forEach { listRowAdapter.add(it) }
 
-                    val headerItem = HeaderItem("dY\". Upcoming $sportName")
+                    val headerItem = HeaderItem("📅 Upcoming $sportName")
                     rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
 
