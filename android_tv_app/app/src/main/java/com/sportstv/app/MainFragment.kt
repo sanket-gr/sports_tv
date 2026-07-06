@@ -145,7 +145,16 @@ class MainFragment : BrowseSupportFragment() {
 
                 rowsAdapter.clear()
                 
-                // 1. Favorites Row
+                // 1. Featured Top Live Row
+                val topLive = liveStreams.firstOrNull()
+                if (topLive != null) {
+                    val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
+                    val listRowAdapter = ArrayObjectAdapter(cardPresenter)
+                    listRowAdapter.add(topLive)
+                    rowsAdapter.add(ListRow(HeaderItem("dY\"\" Top Live Match"), listRowAdapter))
+                }
+                
+                // 2. Favorites Row
                 if (favoriteStreams.isNotEmpty()) {
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
@@ -153,25 +162,26 @@ class MainFragment : BrowseSupportFragment() {
                     rowsAdapter.add(ListRow(HeaderItem("⭐ Favorites"), listRowAdapter))
                 }
 
-                // 2. Live Categories
-                val grouped = liveStreams.groupBy { it.categoryName }
-                grouped.forEach { (categoryName, categoryStreams) ->
+                // 3. Live Categories (excluding Top Live)
+                val remainingLive = if (topLive != null) liveStreams.filter { it.id != topLive.id } else liveStreams
+                val grouped = remainingLive.groupBy { it.sport.replaceFirstChar { c -> c.uppercase() } }
+                grouped.forEach { (sportName, categoryStreams) ->
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     categoryStreams.forEach { listRowAdapter.add(it) }
 
-                    val headerItem = HeaderItem(categoryName)
+                    val headerItem = HeaderItem("dY?+ Live $sportName")
                     rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
                 
-                // 3. Upcoming Categories
-                val upcomingGrouped = upcomingStreams.groupBy { it.categoryName }
-                upcomingGrouped.forEach { (categoryName, categoryStreams) ->
+                // 4. Upcoming Categories
+                val upcomingGrouped = upcomingStreams.groupBy { it.sport.replaceFirstChar { c -> c.uppercase() } }
+                upcomingGrouped.forEach { (sportName, categoryStreams) ->
                     val cardPresenter = CardPresenter(favs) { streamId -> onToggleFavorite(streamId) }
                     val listRowAdapter = ArrayObjectAdapter(cardPresenter)
                     categoryStreams.forEach { listRowAdapter.add(it) }
 
-                    val headerItem = HeaderItem(if (categoryName.isBlank()) "📅 Upcoming / Offline" else categoryName)
+                    val headerItem = HeaderItem("dY\". Upcoming $sportName")
                     rowsAdapter.add(ListRow(headerItem, listRowAdapter))
                 }
 

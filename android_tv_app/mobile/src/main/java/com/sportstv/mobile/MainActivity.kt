@@ -22,9 +22,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var allStreams: List<StreamItem> = emptyList()
     private lateinit var streamAdapter: StreamAdapter
+    private lateinit var categoryAdapter: CategoryAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var statusTextView: TextView
     private var currentTabId = R.id.navigation_home
+    private var currentCategory = "All"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,31 +42,23 @@ class MainActivity : AppCompatActivity() {
         }
         binding.container.addView(statusTextView)
 
+        // Initialize Category RecyclerView
+        categoryAdapter = CategoryAdapter(emptyList()) { selected ->
+            currentCategory = selected
+            updateViewForTab(currentTabId)
+        }
+        binding.categoryRecycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.categoryRecycler.adapter = categoryAdapter
+
         // Initialize RecyclerView
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
         }
-
         streamAdapter = StreamAdapter(emptyList()) { stream ->
-            // Launch StreamDetailBottomSheet when stream card is clicked
-            val bottomSheet = StreamDetailBottomSheet.newInstance(stream).apply {
-                onFavoritesChangedListener = {
-                    refreshCurrentView()
-                }
-            }
-            bottomSheet.show(supportFragmentManager, "stream_detail")
-        }
-
-        binding.root.findViewById<View>(R.id.fab_refresh)?.setOnClickListener {
-            refreshCurrentView(forceNetworkRefresh = true)
+            PlaybackActivity.startWithId(this, stream.id)
         }
         recyclerView.adapter = streamAdapter
 
-        // Fetch streams from backend
         fetchStreams()
 
         // Setup bottom navigation selection listener
@@ -160,11 +154,16 @@ class MainActivity : AppCompatActivity() {
                 if (combinedStreams.isEmpty()) {
                     statusTextView.text = "No streams found"
                     statusTextView.visibility = View.VISIBLE
+                    binding.categoryRecycler.visibility = View.GONE
+                    binding.topLiveContainer.visibility = View.GONE
                 } else {
                     statusTextView.visibility = View.GONE
-                    binding.container.removeAllViews()
-                    binding.container.addView(recyclerView)
-                    streamAdapter.updateData(combinedStreams)
+                    
+                    // Extract unique categories
+                    val sports = combinedStreams.map { it.sport.replaceFirstChar { c -> c.uppercase() } }.distinct()
+                    categoryAdapter.updateCategories(listOf("All") + sports)
+                    
+                    updateViewForTab(currentTabId)
                 }
             } catch (e: Exception) {
                 statusTextView.text = "Error fetching streams:\n${e.message}"
@@ -175,40 +174,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshCurrentView(forceNetworkRefresh: Boolean = false) {
         if (forceNetworkRefresh) {
-            statusTextView.text = "Refreshing..."
-            statusTextView.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-            
-            lifecycleScope.launch {
-                try {
-                    val matches = withContext(Dispatchers.IO) {
-                        ApiClient.service.getSportSrcMatches()
-                    }
-                    
-                    val streams = matches.map { match ->
-                        StreamItem(
-                            id = match.id.hashCode(),
-                            categoryId = match.sport.hashCode(),
-                            categoryName = match.sport.replaceFirstChar { it.uppercase() },
-                            categoryIcon = "",
-                            title = match.title,
-                            participants = match.title,
-                            sport = match.sport,
-                            hlsUrl = "sportsrc://${match.id}",
-                            iframeUrl = "",
-                            cfDomain = "",
-                            thumbnailUrl = match.thumbnail,
-                            isLive = match.status == "inprogress"
-                        )
-                    }
-                    allStreams = streams
-                    updateViewForTab(currentTabId)
-                } catch (e: Exception) {
-                    statusTextView.text = "Failed to load streams: ${e.message}"
-                    statusTextView.visibility = View.VISIBLE
-                    recyclerView.visibility = View.GONE
-                }
-            }
+            fetchStreams()
         } else {
             updateViewForTab(currentTabId)
         }
@@ -226,15 +192,45 @@ class MainActivity : AppCompatActivity() {
         binding.container.removeAllViews()
         if (allStreams.isEmpty()) {
             binding.container.addView(statusTextView)
+            binding.categoryRecycler.visibility = View.GONE
+            binding.topLiveContainer.visibility = View.GONE
             fetchStreams()
         } else {
+            binding.categoryRecycler.visibility = View.VISIBLE
             binding.container.addView(recyclerView)
-            streamAdapter.updateData(allStreams)
+            
+            // Filter by Category
+            var filtered = allStreams
+            if (currentCategory != "All") {
+                filtered = allStreams.filter { it.sport.equals(currentCategory, ignoreCase = true) }
+            }
+            
+            // Extract Top Live Stream
+            val topLive = filtered.firstOrNull { it.isLive }
+            if (topLive != null) {
+                binding.topLiveContainer.visibility = View.VISIBLE
+                binding.topLiveContainer.removeAllViews()
+                
+                // Inflate a stream card for Top Live
+                val topLiveBinding = com.sportstv.mobile.databinding.ItemStreamCardBinding.inflate(layoutInflater, binding.topLiveContainer, false)
+                val holder = streamAdapter.StreamViewHolder(topLiveBinding)
+                holder.bind(topLive)
+                binding.topLiveContainer.addView(topLiveBinding.root)
+                
+                // Show the rest in the recycler
+                streamAdapter.updateData(filtered.filter { it.id != topLive.id })
+            } else {
+                binding.topLiveContainer.visibility = View.GONE
+                streamAdapter.updateData(filtered)
+            }
         }
     }
 
     private fun showFavoritesView() {
         binding.container.removeAllViews()
+        binding.categoryRecycler.visibility = View.GONE
+        binding.topLiveContainer.visibility = View.GONE
+        
         val favIds = FavoritesManager.getFavoriteIds(this)
         val favStreams = allStreams.filter { favIds.contains(it.id) }
 

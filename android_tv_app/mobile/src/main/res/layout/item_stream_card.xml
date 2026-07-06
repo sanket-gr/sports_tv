@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_glass_card"
-        android:padding="12dp">
+        android:padding="16dp">
 
         <!-- Thumbnail on the left -->
         <androidx.cardview.widget.CardView
@@ -36,7 +36,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:background="#1E293B"
+                android:background="@color/glass_surface_dark"
                 android:contentDescription="Stream Thumbnail" />
         </androidx.cardview.widget.CardView>
 
@@ -63,7 +63,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:textColor="@color/glass_text_secondary"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:text="Football"
             app:layout_constraintStart_toEndOf="@id/cv_thumbnail"
             app:layout_constraintEnd_toStartOf="@id/tv_live_badge"

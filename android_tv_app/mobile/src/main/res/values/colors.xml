@@ -6,5 +6,6 @@
     <color name="glass_text_secondary">#CBD5E1</color>
     <color name="neon_green">#10B981</color>
     <color name="neon_blue">#3B82F6</color>
+    <color name="glass_surface_dark">#1E293B</color>
     <color name="glass_bottom_nav">#20000000</color>
 </resources>
