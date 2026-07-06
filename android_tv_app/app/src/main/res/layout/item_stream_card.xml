@@ -6,7 +6,7 @@
     android:layout_height="160dp"
     android:focusable="true"
     android:clickable="true"
-    android:foreground="@drawable/card_background"
+    android:foreground="@drawable/card_foreground"
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp"
     app:cardBackgroundColor="@color/card_background">
