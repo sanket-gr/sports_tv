@@ -69,6 +69,8 @@ class PlaybackActivity : AppCompatActivity() {
     private var hlsUrl: String = ""
     private var iframeUrl: String = ""
     private var cfDomain: String = ""
+    
+    private var sportSrcMatchDetail: com.sportstv.mobile.model.SportSrcMatchDetail? = null
 
     private var watchSessionStartTime: Long = 0L
 
@@ -127,6 +129,11 @@ class PlaybackActivity : AppCompatActivity() {
             binding.playerView.resizeMode = resizeModes[currentModeIndex]
             Toast.makeText(this, "Aspect Ratio: ${modeNames[currentModeIndex]}", Toast.LENGTH_SHORT).show()
             showControls() // Reschedule auto-hide
+        }
+        
+        binding.btnServers.setOnClickListener {
+            showServersDialog()
+            showControls()
         }
 
         binding.sbVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -226,6 +233,8 @@ class PlaybackActivity : AppCompatActivity() {
                 val detail = withContext(Dispatchers.IO) {
                     ApiClient.service.getSportSrcDetail(matchId)
                 }
+                
+                sportSrcMatchDetail = detail
                 
                 val streams = detail.streams
                 if (streams.isNullOrEmpty()) {
@@ -474,6 +483,63 @@ class PlaybackActivity : AppCompatActivity() {
             .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
             .build()
+    }
+    private fun playSelectedServer(stream: com.sportstv.mobile.model.SportSrcStream) {
+        showLoading(true)
+        showError(false)
+        lifecycleScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.service.resolveStream(stream.embedUrl)
+                }
+                val realHls = response.hlsUrl ?: ""
+                if (realHls.isNotBlank()) {
+                    iframeUrl = stream.embedUrl
+                    cfDomain = try { android.net.Uri.parse(realHls).host ?: "" } catch(e: Exception) { "" }
+                    val proxiedUrl = if (realHls.startsWith("http")) {
+                        val serverBase = BASE_URL
+                        val cleanRealHls = realHls.replace(Regex("^https?://[^/]+/"), "")
+                        val proxyUrl = "${serverBase}api/proxy/${cleanRealHls}"
+                        
+                        val referer = cleanReferer(stream.embedUrl)
+                        "$proxyUrl?referer=${android.net.Uri.encode(referer)}"
+                    } else {
+                        realHls
+                    }
+                    initPlayer(proxiedUrl)
+                } else {
+                    showLoading(false)
+                    showError(true, "No active HLS link found for this server.")
+                }
+            } catch (e: Exception) {
+                showLoading(false)
+                showError(true, "Failed to resolve stream.\n${e.localizedMessage}")
+            }
+        }
+    }
+
+    private fun showServersDialog() {
+        val detail = sportSrcMatchDetail
+        val streams = detail?.streams
+
+        if (streams.isNullOrEmpty()) {
+            android.widget.Toast.makeText(this, "No alternative servers available.", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val serverNames = streams.mapIndexed { index, stream ->
+            val hdTag = if (stream.hd) "[HD] " else ""
+            "Server ${index + 1} $hdTag"
+        }.toTypedArray()
+
+        android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Select Stream Server")
+            .setItems(serverNames) { _, which ->
+                val selectedStream = streams[which]
+                playSelectedServer(selectedStream)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }
 

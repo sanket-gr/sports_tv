@@ -100,11 +100,23 @@
                 android:progressTint="@color/neon_blue"
                 android:progressBackgroundTint="#88FFFFFF"
                 app:layout_constraintStart_toEndOf="@id/iv_volume"
-                app:layout_constraintEnd_toStartOf="@id/btn_ratio"
+                app:layout_constraintEnd_toStartOf="@id/btn_servers"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp" />
+
+            <ImageButton
+                android:id="@+id/btn_servers"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_settings"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                app:tint="#FFFFFF"
+                app:layout_constraintEnd_toStartOf="@id/btn_ratio"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:contentDescription="Select Server" />
 
             <ImageButton
                 android:id="@+id/btn_ratio"
