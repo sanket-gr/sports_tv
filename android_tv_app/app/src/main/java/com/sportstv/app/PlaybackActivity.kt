@@ -141,7 +141,6 @@ class PlaybackActivity : FragmentActivity() {
 
         // If hlsUrl is a direct IP URL (not proxied via backend), always refresh first
         val isProxied = hlsUrl.contains("/api/proxy")
-        val isIpUrl   = hlsUrl.matches(Regex("""https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.*"""))
 
         if (hlsUrl.startsWith("sportsrc://")) {
             resolveSportSrcAndPlay(hlsUrl)
