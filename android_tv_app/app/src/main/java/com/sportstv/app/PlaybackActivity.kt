@@ -26,6 +26,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.TransferListener
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
@@ -228,15 +229,36 @@ class PlaybackActivity : FragmentActivity() {
             cfDomain
         )
 
-        player = ExoPlayer.Builder(this).build().also { exo ->
+        // Low-latency live streaming: small buffers to stay near the live edge
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                2_000,   // minBufferMs  – start playing after just 2s of data
+                8_000,   // maxBufferMs  – never buffer more than 8s ahead
+                1_000,   // bufferForPlaybackMs – resume after rebuffer with 1s
+                1_000    // bufferForPlaybackAfterRebufferMs
+            )
+            .build()
+
+        player = ExoPlayer.Builder(this)
+            .setLoadControl(loadControl)
+            .build().also { exo ->
             playerView.player = exo
 
             // Force HLS MIME type — CDNs disguise playlists as .txt/.woff2 etc.
             val mediaItem = MediaItem.Builder()
                 .setUri(Uri.parse(url))
                 .setMimeType("application/x-mpegURL")
+                .setLiveConfiguration(
+                    MediaItem.LiveConfiguration.Builder()
+                        .setTargetOffsetMs(5_000)     // target 5s behind live
+                        .setMaxOffsetMs(10_000)        // max 10s behind
+                        .setMinPlaybackSpeed(0.97f)    // slow down slightly if too close
+                        .setMaxPlaybackSpeed(1.04f)    // speed up to catch up
+                        .build()
+                )
                 .build()
             val hlsSource = HlsMediaSource.Factory(dataSourceFactory)
+                .setAllowChunklessPreparation(true)
                 .createMediaSource(mediaItem)
 
             exo.addListener(object : Player.Listener {
