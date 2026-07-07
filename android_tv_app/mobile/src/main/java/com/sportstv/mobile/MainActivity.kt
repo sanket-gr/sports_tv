@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
         streamAdapter = StreamAdapter(emptyList()) { stream ->
-            PlaybackActivity.startWithId(this, stream.id)
+            PlaybackActivity.start(this, stream)
         }
         recyclerView.adapter = streamAdapter
 
