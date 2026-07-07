@@ -970,7 +970,12 @@ def download_tv_apk():
     return FileResponse(
         path=apk_path,
         media_type="application/vnd.android.package-archive",
-        filename="SportsTv_Leanback.apk"
+        filename="SportsTv_Leanback.apk",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
     )
 
 
@@ -985,7 +990,12 @@ def download_mobile_apk():
     return FileResponse(
         path=apk_path,
         media_type="application/vnd.android.package-archive",
-        filename="SportsTv_Mobile.apk"
+        filename="SportsTv_Mobile.apk",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
     )
 
 
