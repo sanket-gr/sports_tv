@@ -176,12 +176,19 @@ async def lifespan(app: FastAPI):
 
     refresh_task = asyncio.create_task(stream_refresh_worker(app))
 
-    admin_username = os.environ.get("ADMIN_USERNAME")
+    admin_username = os.environ.get("ADMIN_USERNAME") or "admin"
     admin_password = os.environ.get("ADMIN_PASSWORD")
-    if not admin_username or not admin_password:
-        logger.warning("WARNING: Admin panel is running with default authentication credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD env variables to override.")
-        admin_username = admin_username or "admin"
-        admin_password = admin_password or "sanket@123"
+    if not admin_password:
+        import secrets
+        admin_password = secrets.token_urlsafe(12)
+        logger.warning("****************************************************************")
+        logger.warning("WARNING: ADMIN_PASSWORD ENVIRONMENT VARIABLE IS NOT SET!")
+        logger.warning(f"GENERATED SECURE DYNAMIC PASSWORD FOR ADMIN LOGIN: {admin_password}")
+        logger.warning("Use this password to log in. It will change each time the server restarts.")
+        logger.warning("****************************************************************")
+    
+    app.state.admin_username = admin_username
+    app.state.admin_password = admin_password
 
     yield  # App runs here
     
@@ -204,9 +211,19 @@ app.mount("/apks", StaticFiles(directory=str(APKS_DIR)), name="apks")
 
 security = HTTPBasic(auto_error=False)
 
-def get_current_admin(credentials: Optional[HTTPBasicCredentials] = Depends(security)):
-    admin_username = os.environ.get("ADMIN_USERNAME") or "admin"
-    admin_password = os.environ.get("ADMIN_PASSWORD") or "sanket@123"
+def get_current_admin(
+    request: Request,
+    credentials: Optional[HTTPBasicCredentials] = Depends(security)
+):
+    admin_username = os.environ.get("ADMIN_USERNAME") or getattr(request.app.state, "admin_username", "admin")
+    admin_password = os.environ.get("ADMIN_PASSWORD") or getattr(request.app.state, "admin_password", None)
+    
+    if not admin_password:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Admin login is disabled (password not configured).",
+        )
+        
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

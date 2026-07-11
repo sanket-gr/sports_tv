@@ -122,7 +122,22 @@ async def fetch_sportsrc_data(endpoint_type: str, match_id: Optional[str] = None
     # Fallback to simulated/mock data matching SportSRC v2.5 schema for stats, lineups etc
     return get_mock_data(endpoint_type, match_id, extra_params)
 
+import time
+
+_hls_cache = {}
+CACHE_TTL = 900  # 15 minutes cache TTL
+
 async def extract_hls_from_embed(embed_url: str) -> str:
+    # Check cache first
+    now = time.time()
+    if embed_url in _hls_cache:
+        cached = _hls_cache[embed_url]
+        if now - cached["timestamp"] < CACHE_TTL:
+            logger.info(f"Using cached HLS URL for: {embed_url}")
+            return cached["hls_url"]
+        else:
+            del _hls_cache[embed_url]
+
     logger.info(f"Extracting HLS from embed: {embed_url}")
     captured = []
     
@@ -170,6 +185,12 @@ async def extract_hls_from_embed(embed_url: str) -> str:
                 best_url = url
                 break
         logger.info(f"Successfully extracted HLS URL: {best_url}")
+        
+        # Save to cache
+        _hls_cache[embed_url] = {
+            "hls_url": best_url,
+            "timestamp": time.time()
+        }
         return best_url
         
     logger.warning(f"Failed to extract HLS from {embed_url}")

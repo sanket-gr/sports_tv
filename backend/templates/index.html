@@ -13,6 +13,16 @@
   <!-- HLS.js Library -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J1HZM8KEK2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-J1HZM8KEK2');
+  </script>
+
   <style>
     :root {
       --bg-base: #030712;
@@ -297,6 +307,44 @@
       position: relative;
       width: 380px;
     }
+    
+    /* App Downloads */
+    .download-container {
+      display: flex;
+      gap: 12px;
+      margin-left: auto;
+      margin-right: 20px;
+    }
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+    .download-btn:hover {
+      border-color: var(--border-glowing);
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--accent-primary);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+    }
+    .download-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+    @media (max-width: 768px) {
+      .download-container {
+        display: none;
+      }
+    }
+
     .search-input {
       width: 100%;
       background: rgba(255, 255, 255, 0.04);
@@ -1129,13 +1177,7 @@
         </ul>
       </div>
 
-      <!-- Admin Panel redirect -->
-      <div class="sidebar-footer">
-        <a href="/admin" class="admin-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          Admin Dashboard
-        </a>
-      </div>
+      <!-- Admin Panel redirect removed for security -->
     </aside>
 
     <!-- Main Section -->
@@ -1146,6 +1188,17 @@
         <div class="search-container">
           <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           <input type="text" class="search-input" id="search-input" placeholder="Search matches, tournaments, or athletes..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="download-container">
+          <a href="/download/mobile" class="download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            Mobile App
+          </a>
+          <a href="/download/tv" class="download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            Android TV App
+          </a>
         </div>
 
         <div class="system-status">

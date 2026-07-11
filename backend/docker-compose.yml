@@ -32,5 +32,7 @@ services:
       - DATABASE_URL=sqlite:///./db/sports_tv.db
       # Point the scraper at the FlareSolverr sidecar (service name resolves in Docker)
       - FLARESOLVERR_URL=http://flaresolverr:8191
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       # Optional: uncomment to add a residential proxy as an extra bypass layer
       # - SCRAPER_PROXY=http://user:pass@proxy.example.com:8001
