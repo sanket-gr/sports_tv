@@ -24,7 +24,7 @@ android_tv_app/*.iml
 android_tv_app/.idea/
 
 # APK files (share separately, not via git)
-*.apk
+# *.apk
 
 # Playwright browsers (installed on server)
 backend/playwright/
