@@ -15,8 +15,8 @@ import com.google.gson.annotations.SerializedName
 // IMPORTANT: Change this to your PC's local IP when testing on a real TV device.
 // Use "http://10.0.2.2:8000/" ONLY for Android Studio emulator.
 // Use "http://192.168.100.104:8000/" for a real TV on the same WiFi network.
-// PRODUCTION AWS: "http://13.204.129.74/"
-const val BASE_URL = "http://13.204.129.74/"
+// PRODUCTION AWS: "https://rara.qd.je/"
+const val BASE_URL = "https://rara.qd.je/"
 
 
 
