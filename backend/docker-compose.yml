@@ -24,7 +24,7 @@ services:
     depends_on:
       - flaresolverr
     ports:
-      - "80:8000"
+      - "8000:8000"
     volumes:
       # Mount the database directory so data persists across restarts and rebuilds
       - ./db:/app/db
