@@ -65,6 +65,8 @@ class PlaybackActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlaybackBinding
     private var player: ExoPlayer? = null
     private var errorCountdownJob: Job? = null
+    private var autoRetryCount = 0
+    private val MAX_AUTO_RETRIES = 3
 
     private var streamId: Int = -1
     private var hlsUrl: String = ""
@@ -304,13 +306,13 @@ class PlaybackActivity : AppCompatActivity() {
             cfDomain
         )
 
-        // Low-latency live streaming: small buffers to stay near the live edge
+        // Balanced live streaming buffers: enough cushion to absorb proxy latency
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                2_000,   // minBufferMs  – start playing after just 2s of data
-                8_000,   // maxBufferMs  – never buffer more than 8s ahead
-                1_000,   // bufferForPlaybackMs – resume after rebuffer with 1s
-                1_000    // bufferForPlaybackAfterRebufferMs
+                5_000,   // minBufferMs  – buffer 5s before starting
+                30_000,  // maxBufferMs  – keep up to 30s ahead for stability
+                2_500,   // bufferForPlaybackMs – resume after 2.5s buffered
+                3_000    // bufferForPlaybackAfterRebufferMs – 3s after rebuffer
             )
             .build()
 
@@ -349,6 +351,7 @@ class PlaybackActivity : AppCompatActivity() {
                     when (state) {
                         Player.STATE_READY     -> {
                             showLoading(false)
+                            autoRetryCount = 0 // Reset retry counter on successful playback
                             binding.btnPlayPause.setImageResource(R.drawable.ic_pause)
                         }
                         Player.STATE_BUFFERING -> showLoading(true)
@@ -358,7 +361,7 @@ class PlaybackActivity : AppCompatActivity() {
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    Log.e(TAG, "Player error code=${error.errorCode} msg=${error.message}", error)
+                    Log.e(TAG, "Player error code=${error.errorCode} msg=${error.message} retryCount=$autoRetryCount", error)
                     showLoading(false)
                     val msg = error.message ?: ""
                     when {
@@ -369,10 +372,29 @@ class PlaybackActivity : AppCompatActivity() {
                         msg.contains("Unable to connect") ||
                         msg.contains("Failed to connect") ||
                         msg.contains("UnknownHostException") -> {
-                            showError(true, "Cannot reach stream server.\nCheck your network and tap Retry.", 5)
+                            if (autoRetryCount < MAX_AUTO_RETRIES) {
+                                autoRetryCount++
+                                Log.d(TAG, "Network error, silent retry #$autoRetryCount...")
+                                lifecycleScope.launch {
+                                    delay(1_500L * autoRetryCount)
+                                    initPlayer(url)
+                                }
+                            } else {
+                                showError(true, "Cannot reach stream server.\nCheck your network and tap Retry.", 5)
+                            }
                         }
                         else -> {
-                            showError(true, "Playback error (${error.errorCode}): $msg\n\nTap Retry to try again.", 5)
+                            // HLS errors (3002, etc.) — auto-retry silently before showing error
+                            if (autoRetryCount < MAX_AUTO_RETRIES) {
+                                autoRetryCount++
+                                Log.d(TAG, "Playback error ${error.errorCode}, silent retry #$autoRetryCount...")
+                                lifecycleScope.launch {
+                                    delay(1_500L * autoRetryCount)
+                                    initPlayer(url)
+                                }
+                            } else {
+                                showError(true, "Playback error (${error.errorCode}): $msg\n\nTap Retry to try again.", 5)
+                            }
                         }
                     }
                 }
@@ -502,8 +524,9 @@ class PlaybackActivity : AppCompatActivity() {
 
     private fun getSecureOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder()
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
     private fun playSelectedServer(stream: com.sportstv.mobile.model.SportSrcStream) {

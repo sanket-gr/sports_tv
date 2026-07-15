@@ -70,6 +70,8 @@ class PlaybackActivity : FragmentActivity() {
     private lateinit var tvMatchTitle: TextView
     private lateinit var tvMatchSub: TextView
     private var errorCountdownJob: kotlinx.coroutines.Job? = null
+    private var autoRetryCount = 0
+    private val MAX_AUTO_RETRIES = 3
 
     private var streamId: Int = -1
     private var hlsUrl: String = ""
@@ -219,8 +221,8 @@ class PlaybackActivity : FragmentActivity() {
                     "Accept-Language" to "en-US,en;q=0.9",
                 )
             )
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(15_000)
+            .setConnectTimeoutMs(30_000)
+            .setReadTimeoutMs(30_000)
 
         val dataSourceFactory = DynamicHeaderDataSourceFactory(
             baseHttpDataSourceFactory,
@@ -228,13 +230,13 @@ class PlaybackActivity : FragmentActivity() {
             cfDomain
         )
 
-        // Low-latency live streaming: small buffers to stay near the live edge
+        // Balanced live streaming buffers: enough cushion to absorb proxy latency
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                2_000,   // minBufferMs  – start playing after just 2s of data
-                8_000,   // maxBufferMs  – never buffer more than 8s ahead
-                1_000,   // bufferForPlaybackMs – resume after rebuffer with 1s
-                1_000    // bufferForPlaybackAfterRebufferMs
+                5_000,   // minBufferMs  – buffer 5s before starting
+                30_000,  // maxBufferMs  – keep up to 30s ahead for stability
+                2_500,   // bufferForPlaybackMs – resume after 2.5s buffered
+                3_000    // bufferForPlaybackAfterRebufferMs – 3s after rebuffer
             )
             .build()
 
@@ -269,7 +271,10 @@ class PlaybackActivity : FragmentActivity() {
 
                 override fun onPlaybackStateChanged(state: Int) {
                     when (state) {
-                        Player.STATE_READY    -> showLoading(false)
+                        Player.STATE_READY    -> {
+                            showLoading(false)
+                            autoRetryCount = 0 // Reset retry counter on successful playback
+                        }
                         Player.STATE_BUFFERING -> showLoading(true)
                         Player.STATE_ENDED    -> finish()
                         else -> {}
@@ -277,7 +282,7 @@ class PlaybackActivity : FragmentActivity() {
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    Log.e(TAG, "Player error code=${error.errorCode} msg=${error.message}", error)
+                    Log.e(TAG, "Player error code=${error.errorCode} msg=${error.message} retryCount=$autoRetryCount", error)
                     showLoading(false)
                     val msg = error.message ?: ""
                     when {
@@ -289,10 +294,29 @@ class PlaybackActivity : FragmentActivity() {
                         msg.contains("Unable to connect") ||
                         msg.contains("Failed to connect") ||
                         msg.contains("UnknownHostException") -> {
-                            showError(true, "Cannot reach stream server.\nCheck your network and tap Retry.", 5)
+                            if (autoRetryCount < MAX_AUTO_RETRIES) {
+                                autoRetryCount++
+                                Log.d(TAG, "Network error, silent retry #$autoRetryCount...")
+                                lifecycleScope.launch {
+                                    kotlinx.coroutines.delay(1_500L * autoRetryCount)
+                                    initPlayer(url)
+                                }
+                            } else {
+                                showError(true, "Cannot reach stream server.\nCheck your network and tap Retry.", 5)
+                            }
                         }
                         else -> {
-                            showError(true, "Playback error (${error.errorCode}): $msg\n\nTap Retry to try again.", 5)
+                            // HLS errors (3002, etc.) — auto-retry silently before showing error
+                            if (autoRetryCount < MAX_AUTO_RETRIES) {
+                                autoRetryCount++
+                                Log.d(TAG, "Playback error ${error.errorCode}, silent retry #$autoRetryCount...")
+                                lifecycleScope.launch {
+                                    kotlinx.coroutines.delay(1_500L * autoRetryCount)
+                                    initPlayer(url)
+                                }
+                            } else {
+                                showError(true, "Playback error (${error.errorCode}): $msg\n\nTap Retry to try again.", 5)
+                            }
                         }
                     }
                 }

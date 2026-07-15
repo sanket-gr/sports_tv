@@ -538,7 +538,33 @@ def refresh_stream(
 
 import urllib.parse
 import urllib3
+from collections import OrderedDict
+import hashlib
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# ── Segment cache: LRU in-memory cache for proxied binary segments ──────────
+# Avoids re-fetching the same .ts/.m4s chunks from the CDN on every request.
+# Max 200 entries (~1MB avg per segment = ~200MB RAM usage at peak).
+_segment_cache = OrderedDict()
+SEGMENT_CACHE_MAX = 200
+
+def _cache_key(url: str) -> str:
+    return hashlib.sha256(url.encode()).hexdigest()
+
+def _cache_get(url: str):
+    key = _cache_key(url)
+    if key in _segment_cache:
+        _segment_cache.move_to_end(key)
+        return _segment_cache[key]
+    return None
+
+def _cache_put(url: str, content_type: str, data: bytes):
+    key = _cache_key(url)
+    _segment_cache[key] = (content_type, data)
+    _segment_cache.move_to_end(key)
+    while len(_segment_cache) > SEGMENT_CACHE_MAX:
+        _segment_cache.popitem(last=False)
 
 
 @app.get("/api/proxy")
@@ -628,10 +654,23 @@ async def hls_proxy(
 
     # 4. Conditional SSL verification: only False for raw IP-based URLs
     verify_ssl = not _needs_proxy(url)
-    try:
-        resp = req_lib.get(url, headers=headers, verify=verify_ssl, timeout=15, stream=True)
-    except Exception as e:
-        return PlainTextResponse(f"Proxy error: {e}", status_code=502)
+    
+    # Retry up to 2 times on upstream failures
+    resp = None
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = req_lib.get(url, headers=headers, verify=verify_ssl, timeout=30, stream=True)
+            if resp.status_code < 500:
+                break  # Success or client error (don't retry 4xx)
+            last_err = f"HTTP {resp.status_code}"
+        except Exception as e:
+            last_err = str(e)
+            if attempt < 2:
+                import time; time.sleep(0.5 * (attempt + 1))
+    
+    if resp is None:
+        return PlainTextResponse(f"Proxy error after retries: {last_err}", status_code=502)
 
     content_type = resp.headers.get("Content-Type", "application/octet-stream")
 
@@ -662,19 +701,34 @@ async def hls_proxy(
             },
         )
 
-    # For binary media segments – stream through
+    # For binary media segments – check cache first, then stream through
     from fastapi.responses import StreamingResponse
 
-    def _stream():
-        for chunk in resp.iter_content(chunk_size=65536):
-            yield chunk
+    # Check segment cache
+    cached = _cache_get(url)
+    if cached:
+        cached_ct, cached_data = cached
+        return Response(
+            content=cached_data,
+            media_type=cached_ct,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "public, max-age=300",
+                "X-Cache": "HIT",
+            },
+        )
 
-    return StreamingResponse(
-        _stream(),
+    # Not cached — fetch and cache for future requests
+    segment_data = resp.content  # Read full segment (typically 0.5-2MB)
+    _cache_put(url, content_type, segment_data)
+
+    return Response(
+        content=segment_data,
         media_type=content_type,
         headers={
             "Access-Control-Allow-Origin": "*",
-            "Cache-Control": "no-cache",
+            "Cache-Control": "public, max-age=300",
+            "X-Cache": "MISS",
         },
     )
 
