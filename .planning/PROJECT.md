@@ -23,16 +23,18 @@ Reliable live sports stream playback on Android TV and Android Mobile phones.
 
 ### Validated
 
-- [x] Reliable live sports stream playback on Android TV — v1.0
-- [x] Python/FastAPI scraping backend with Playwright async pooling — v1.0
-- [x] Cached stream URL resolution with TTL and background worker refresh — v1.0
-- [x] Leanback Android TV application with ExoPlayer integration — v1.0
-- [x] SQLite database storage and Render deployment config — v1.0
-- [x] Native Android mobile phone UI layout (adapted for touch/portrait navigation) — v2.0
-- [x] Retrofit client integration with the FastAPI backend (reusing ApiClient) — v2.0
-- [x] ExoPlayer playback with mobile touch controls (play/pause, volume, full screen) — v2.0
-- [x] Mobile favorites screen/list with local persistence — v2.0
-- [x] Gradle build and emulator run verified in Android Studio — v2.0
+- ✓ Reliable live sports stream playback on Android TV — v1.0
+- ✓ Python/FastAPI scraping backend with Playwright async pooling — v1.0
+- ✓ Cached stream URL resolution with TTL and background worker refresh — v1.0
+- ✓ Leanback Android TV application with ExoPlayer integration — v1.0
+- ✓ SQLite database storage and Render deployment config — v1.0
+- ✓ Native Android mobile phone UI layout (adapted for touch/portrait navigation) — v2.0
+- ✓ Retrofit client integration with the FastAPI backend (reusing ApiClient) — v2.0
+- ✓ ExoPlayer playback with mobile touch controls (play/pause, volume, full screen) — v2.0
+- ✓ Mobile favorites screen/list with local persistence — v2.0
+- ✓ Gradle build and emulator run verified in Android Studio — v2.0
+- ✓ Closed MainActivity-StreamDetailBottomSheet integration gap — v2.0
+- ✓ Low-latency live stream optimizations (bigger buffers, auto-retry, proxy segment cache) — v2.0
 
 ### Active
 
@@ -47,7 +49,7 @@ Reliable live sports stream playback on Android TV and Android Mobile phones.
 
 ## Context
 
-Shipped v2.0 Android Mobile App milestone with 4 completed phases.
+Shipped v2.0 Android Mobile App milestone with 5 completed phases and post-audit streaming stability optimizations.
 **Sports TV** is built to run on older TV hardware and standard Android phones, so client-side overhead must be kept to a minimum. Scraping is slow, making backend caching and browser session optimization critical.
 
 ---
@@ -63,12 +65,10 @@ Shipped v2.0 Android Mobile App milestone with 4 completed phases.
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Playwright async lifespan | Shared browser instance in FastAPI reduces startup times | ✓ Good |
-| MIME override for ExoPlayer | ExoPlayer fails to play raw HLS without `application/x-mpegURL` | ✓ Good |
-| DynamicHeaderDataSourceFactory | Needed for dynamic header injection for domain-restricted HLS on mobile | ✓ Good |
-| Material Components NoActionBar | Immersive mobile app experience without standard toolbars | ✓ Good |
+- Decision: Shared browser instance in FastAPI | Rationale: Reduces startup times | Outcome: ✓ Good
+- Decision: Override stream MIME types | Rationale: ExoPlayer fails to play raw HLS without `application/x-mpegURL` | Outcome: ✓ Good
+- Decision: DynamicHeaderDataSourceFactory | Rationale: Needed for dynamic header injection for domain-restricted HLS on mobile | Outcome: ✓ Good
+- Decision: Material Components NoActionBar | Rationale: Immersive mobile app experience without standard toolbars | Outcome: ✓ Good
 
 ---
 
@@ -90,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-_Last updated: 2026-06-17 after v2.0 milestone_
+_Last updated: 2026-07-15 after v2.0 milestone completion_
