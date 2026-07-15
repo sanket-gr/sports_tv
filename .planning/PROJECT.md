@@ -19,6 +19,17 @@ Reliable live sports stream playback on Android TV and Android Mobile phones.
 
 ---
 
+## Current Milestone: v3.0 UX Polish & Deep Linking
+
+**Goal:** Polish player UX, support deep linking, and consolidate shared client-side logic.
+
+**Target features:**
+- **Deep Linking:** Launch mobile/TV stream views directly from standard URLs.
+- **Stream Quality Selector:** Auto/1080p/720p/480p manual selection in the player overlay.
+- **Code Consolidation:** Unify shared player setup, network configuration, and utility logic.
+
+---
+
 ## Requirements
 
 ### Validated
