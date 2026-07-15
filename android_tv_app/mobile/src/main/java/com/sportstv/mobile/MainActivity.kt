@@ -55,7 +55,11 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
         streamAdapter = StreamAdapter(emptyList()) { stream ->
-            PlaybackActivity.start(this, stream)
+            val bottomSheet = StreamDetailBottomSheet.newInstance(stream)
+            bottomSheet.onFavoritesChangedListener = {
+                refreshCurrentView()
+            }
+            bottomSheet.show(supportFragmentManager, "StreamDetailBottomSheet")
         }
         recyclerView.adapter = streamAdapter
 
