@@ -137,23 +137,23 @@ async def lifespan(app: FastAPI):
     # Seed initial AppVersion if missing
     if db.query(AppVersion).count() == 0:
         db.add_all([
-            AppVersion(platform="tv", version_code=4, version_name="1.3", release_notes="Added upcoming streams and fixed bugs."),
-            AppVersion(platform="mobile", version_code=2, version_name="1.1", release_notes="Fixed Watch Live crash and added upcoming streams.")
+            AppVersion(platform="tv", version_code=10, version_name="3.0", release_notes="Milestone v3.0 updates including deep-linking and stability fixes."),
+            AppVersion(platform="mobile", version_code=10, version_name="3.0", release_notes="Milestone v3.0 updates including deep-linking and stability fixes.")
         ])
         db.commit()
     else:
         # Auto-upgrade existing tv version if it's outdated
         tv_version = db.query(AppVersion).filter_by(platform="tv").first()
-        if tv_version and tv_version.version_code < 4:
-            tv_version.version_code = 4
-            tv_version.version_name = "1.3"
-            tv_version.release_notes = "Added upcoming streams and fixed bugs."
+        if tv_version and tv_version.version_code < 10:
+            tv_version.version_code = 10
+            tv_version.version_name = "3.0"
+            tv_version.release_notes = "Milestone v3.0 updates including deep-linking and stability fixes."
             
         mobile_version = db.query(AppVersion).filter_by(platform="mobile").first()
-        if mobile_version and mobile_version.version_code < 2:
-            mobile_version.version_code = 2
-            mobile_version.version_name = "1.1"
-            mobile_version.release_notes = "Fixed Watch Live crash and added upcoming streams."
+        if mobile_version and mobile_version.version_code < 10:
+            mobile_version.version_code = 10
+            mobile_version.version_name = "3.0"
+            mobile_version.release_notes = "Milestone v3.0 updates including deep-linking and stability fixes."
             
         db.commit()
 
